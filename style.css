@@ -1,0 +1,92 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #F5F0E8;
+  font-family: sans-serif;
+  min-height: 100vh;
+}
+
+.app {
+  background: #FFFDF8;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #C8D8C0;
+  padding: 40px 40px;
+  text-align: center;
+  width: 100%;
+}
+
+.header h1 {
+  color: #2C4A28;
+  font-size: 48px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.header p {
+  color: #4A6B44;
+  font-size: 16px;
+}
+
+.content {
+  padding: 24px 40px 48px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-label {
+  font-size: 12px;
+  color: #888780;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.buttons-row {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  flex: 1;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  background: #FFFDF8;
+  border: 0.5px solid #D3C9B8;
+  border-radius: 20px;
+  padding: 48px 24px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.mode-btn:hover {
+  background: #F5F0E8;
+  border-color: #8AAC82;
+}
+
+.mode-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: #2C2C2A;
+  margin-bottom: 8px;
+}
+
+.mode-sub {
+  font-size: 15px;
+  color: #888780;
+}
