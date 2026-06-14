@@ -34,8 +34,30 @@
           </div>
         </div>
       </div>
-
+<div class="screen" id="nameScreen" style="display: none;">
+  <div class="content">
+    <p class="section-label" id="nameLabel">What is your name?</p>
+    <div class="home-card">
+      <input type="text" id="nameInput" placeholder="Enter your name" />
+      <button class="next-btn" id="nameNextBtn">Next</button>
+    </div>
+  </div>
+</div>
       <script src="script.js"></script>
     </div>
   </body>
 </html>
+#nameScreen .content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+#nameScreen .home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  ga
