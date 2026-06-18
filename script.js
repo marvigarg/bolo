@@ -16,3 +16,16 @@ document.getElementById('someoneBtn').addEventListener('click', function() {
   document.getElementById('nameInput').placeholder = 'Enter patient\'s name'
   document.getElementById('nameScreen').style.display = 'flex'
 })
+document.getElementById('nameNextBtn').addEventListener('click', function() {
+  document.getElementById('nameScreen').style.display = 'none'
+  document.getElementById('languageScreen').style.display = 'flex'
+})
+
+document.querySelectorAll('.lang-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.lang-btn').forEach(function(b) {
+      b.classList.remove('selected')
+    })
+    btn.classList.add('selected')
+  })
+})
