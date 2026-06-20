@@ -1,4 +1,4 @@
- {
+ *{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -348,4 +348,139 @@ input:checked + .slider:before {
   border-color: #8AAC82;
   color: #2C4A28;
   font-weight: 500;
+}
+#patientHomeScreen .content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.reminder-card {
+  background: #FFFDF8;
+  border: 2px solid #C8A898;
+  border-radius: 24px;
+  padding: 40px;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.reminder-med {
+  font-size: 32px;
+  font-weight: 500;
+  color: #2C4A28;
+  margin-bottom: 8px;
+}
+
+.reminder-time {
+  font-size: 18px;
+  color: #888780;
+}
+
+.hold-hint {
+  font-size: 14px;
+  color: #B4B2A9;
+  text-align: center;
+}
+
+.hold-zone {
+  width: 80vmin;
+  height: 80vmin;
+  max-width: 500px;
+  max-height: 500px;
+  background: #C8D8C0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #2C4A28;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.1s ease;
+}
+
+.hold-zone:active {
+  transform: scale(0.97);
+}
+
+.hold-zone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #8AAC82;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform var(--fill-duration, 1500ms) linear;
+  z-index: 0;
+}
+
+.hold-zone.holding::before {
+  transform: scaleY(1);
+}
+
+.hold-zone.holding {
+  color: #FFFDF8;
+}
+
+#holdLabel {
+  position: relative;
+  z-index: 1;
+}
+.confirm-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fdf6ec;
+}
+
+.confirm-button {
+  width: 80vmin;
+  height: 80vmin;
+  max-width: 500px;
+  max-height: 500px;
+  border-radius: 50%;
+  border: none;
+  background: #4a7c59;
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  transition: transform 0.1s ease;
+}
+
+.confirm-button:active {
+  transform: scale(0.97);
+}
+
+.confirm-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #2f5233;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform var(--fill-duration, 1500ms) linear;
+  z-index: 0;
+}
+
+.confirm-button.filling::before {
+  transform: scaleY(1);
+}
+
+.confirm-label {
+  position: relative;
+  z-index: 1;
 }
