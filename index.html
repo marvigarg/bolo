@@ -34,62 +34,83 @@
           </div>
         </div>
       </div>
-<div class="screen" id="nameScreen" style="display: none;">
-  <div class="content">
-    <p class="section-label" id="nameLabel">What is your name?</p>
-    <div class="home-card">
-      <input type="text" id="nameInput" placeholder="Enter your name" />
-      <button class="next-btn" id="nameNextBtn">Next</button>
-    </div>
-  </div>
-</div>
-<div class="screen" id="languageScreen" style="display: none;">
-  <div class="content">
-    <p class="section-label">What language do you prefer?</p>
-    <div class="lang-grid">
-  <button class="lang-btn" data-lang="en">🇬🇧 English</button>
-  <button class="lang-btn" data-lang="hi">🇮🇳 Hindi</button>
-  <button class="lang-btn" data-lang="es">🇪🇸 Spanish</button>
-  <button class="lang-btn" data-lang="ar">🇸🇦 Arabic</button>
-  <button class="lang-btn" data-lang="fr">🇫🇷 French</button>
-  <button class="lang-btn" data-lang="zh">🇨🇳 Mandarin</button>
-  <button class="lang-btn" data-lang="pt">🇵🇹 Portuguese</button>
-  <button class="lang-btn" data-lang="ru">🇷🇺 Russian</button>
-  <button class="lang-btn" data-lang="ja">🇯🇵 Japanese</button>
-  <button class="lang-btn" data-lang="ko">🇰🇷 Korean</button>
-  <button class="lang-btn" data-lang="de">🇩🇪 German</button>
-  <button class="lang-btn" data-lang="it">🇮🇹 Italian</button>
-  <button class="lang-btn" data-lang="tr">🇹🇷 Turkish</button>
-  <button class="lang-btn" data-lang="vi">🇻🇳 Vietnamese</button>
-  <button class="lang-btn" data-lang="tl">🇵🇭 Filipino</button>
-  <button class="lang-btn" data-lang="ur">🇵🇰 Urdu</button>
-  <p class="more-langs">More languages coming soon!</p>
-</div>
-    <div class="english-toggle">
-      <span class="toggle-label">Display app in English</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="englishToggle" checked />
-        <span class="slider"></span>
-      </label>
-    </div>
-    <button class="next-btn" id="langNextBtn">Next</button>
-  </div>
-</div>
+
+      <div class="screen" id="nameScreen" style="display: none;">
+        <div class="content">
+          <p class="section-label" id="nameLabel">What is your name?</p>
+          <div class="home-card">
+            <input type="text" id="nameInput" placeholder="Enter your name" />
+            <button class="next-btn" id="nameNextBtn">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" id="languageScreen" style="display: none;">
+        <div class="content">
+          <p class="section-label">What language do you prefer?</p>
+          <div class="lang-grid">
+            <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+            <button class="lang-btn" data-lang="hi">🇮🇳 Hindi</button>
+            <button class="lang-btn" data-lang="es">🇪🇸 Spanish</button>
+            <button class="lang-btn" data-lang="ar">🇸🇦 Arabic</button>
+            <button class="lang-btn" data-lang="fr">🇫🇷 French</button>
+            <button class="lang-btn" data-lang="zh">🇨🇳 Mandarin</button>
+            <button class="lang-btn" data-lang="pt">🇵🇹 Portuguese</button>
+            <button class="lang-btn" data-lang="ru">🇷🇺 Russian</button>
+            <button class="lang-btn" data-lang="ja">🇯🇵 Japanese</button>
+            <button class="lang-btn" data-lang="ko">🇰🇷 Korean</button>
+            <button class="lang-btn" data-lang="de">🇩🇪 German</button>
+            <button class="lang-btn" data-lang="it">🇮🇹 Italian</button>
+            <button class="lang-btn" data-lang="tr">🇹🇷 Turkish</button>
+            <button class="lang-btn" data-lang="vi">🇻🇳 Vietnamese</button>
+            <button class="lang-btn" data-lang="tl">🇵🇭 Filipino</button>
+            <button class="lang-btn" data-lang="ur">🇵🇰 Urdu</button>
+            <p class="more-langs">More languages coming soon!</p>
+          </div>
+          <div class="english-toggle">
+            <span class="toggle-label">Display app in English</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="englishToggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <button class="next-btn" id="langNextBtn">Next</button>
+        </div>
+      </div>
+
+      <div class="screen" id="medicineScreen" style="display: none;">
+        <div class="content">
+          <p class="section-label">Add a medicine</p>
+          <div class="home-card">
+            <input type="text" id="medNameInput" placeholder="Medicine name" />
+            <input type="number" id="medDosageInput" placeholder="Dosage (number of tablets)" />
+            <input type="number" id="medCountInput" placeholder="Starting tablet count" />
+            <input type="time" id="medTimeInput" />
+
+            <p class="section-label" style="margin-top: 16px;">Which days?</p>
+            <div class="day-picker">
+              <button class="day-btn" data-day="mon">Mon</button>
+              <button class="day-btn" data-day="tue">Tue</button>
+              <button class="day-btn" data-day="wed">Wed</button>
+              <button class="day-btn" data-day="thu">Thu</button>
+              <button class="day-btn" data-day="fri">Fri</button>
+              <button class="day-btn" data-day="sat">Sat</button>
+              <button class="day-btn" data-day="sun">Sun</button>
+            </div>
+
+            <p class="section-label" style="margin-top: 16px;">How often?</p>
+            <div class="freq-picker">
+              <button class="freq-btn selected" data-freq="weekly">Every week</button>
+              <button class="freq-btn" data-freq="biweekly">Every 2 weeks</button>
+              <button class="freq-btn" data-freq="monthly">Every month</button>
+            </div>
+
+            <button class="next-btn" id="medNextBtn" style="margin-top: 16px;">Add medicine</button>
+          </div>
+        </div>
+      </div>
+
       <script src="script.js"></script>
     </div>
   </body>
 </html>
-#nameScreen .content {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-}
-
-#nameScreen .home-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  ga

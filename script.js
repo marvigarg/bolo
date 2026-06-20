@@ -29,3 +29,21 @@ document.querySelectorAll('.lang-btn').forEach(function(btn) {
     btn.classList.add('selected')
   })
 })
+document.getElementById('langNextBtn').addEventListener('click', function() {
+  document.getElementById('languageScreen').style.display = 'none'
+  document.getElementById('medicineScreen').style.display = 'flex'
+})
+document.querySelectorAll('.day-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    btn.classList.toggle('selected')
+  })
+})
+
+document.querySelectorAll('.freq-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.freq-btn').forEach(function(b) {
+      b.classList.remove('selected')
+    })
+    btn.classList.add('selected')
+  })
+})

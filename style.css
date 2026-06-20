@@ -1,5 +1,4 @@
-
-* {
+ {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -115,7 +114,7 @@ body {
   flex-direction: column;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"], input[type="time"] {
   width: 100%;
   padding: 16px;
   font-size: 16px;
@@ -134,50 +133,21 @@ input[type="text"] {
   min-height: 100vh;
 }
 
-`Cmd+A`, delete, type this:
+#nameScreen .content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bolo</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="app">
-
-      <div id="homeScreen">
-        <div class="content">
-          <div class="home-card">
-            <h2>Welcome to Bolo</h2>
-            <p>Reminders that feel like family</p>
-            <button class="next-btn" id="getStartedBtn">Get started</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="screen" id="whoScreen" style="display: none;">
-        <div class="content">
-          <p class="section-label">Who is this for?</p>
-          <div class="who-btns">
-            <button class="mode-btn" id="myselfBtn">
-              <span class="mode-title">Myself</span>
-              <span class="mode-sub">I'll manage my own medicines</span>
-            </button>
-            <button class="mode-btn" id="someoneBtn">
-              <span class="mode-title">Someone I care for</span>
-              <span class="mode-sub">I'm setting this up for a family member</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <script src="script.js"></script>
-    </div>
-  </body>
-</html>
+#nameScreen .home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
 
 #whoScreen .content {
   min-height: 100vh;
@@ -200,6 +170,7 @@ input[type="text"] {
   flex: 1;
   min-height: 400px;
 }
+
 #languageScreen .content {
   min-height: 100vh;
   display: flex;
@@ -241,46 +212,16 @@ input[type="text"] {
   font-weight: 500;
 }
 
-.lang-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-  max-width: 600px;
-}
-
-.lang-btn {
-  background: #FFFDF8;
-  border: 1.5px solid #D3C9B8;
-  border-radius: 50px;
-  padding: 14px 20px;
-  font-size: 15px;
-  cursor: pointer;
-  text-align: center;
-}
-
-.lang-btn:hover {
-  background: #F5F0E8;
-  border-color: #8AAC82;
-}
-
-.lang-btn.selected {
-  background: #C8D8C0;
-  border-color: #8AAC82;
-  color: #2C4A28;
-  font-weight: 500;
-}
-
 .english-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 600px;
+  max-width: 640px;
   background: #FFFDF8;
   border: 1.5px solid #D3C9B8;
   border-radius: 14px;
-  padding: 16px 20px;
+  padding: 18px 24px;
 }
 
 .toggle-label {
@@ -328,10 +269,83 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(20px);
 }
+
 .more-langs {
   grid-column: 1 / -1;
   text-align: center;
   font-size: 13px;
   color: #B4B2A9;
   padding: 8px 0;
+}
+
+#medicineScreen .content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+#medicineScreen .home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 500px;
+  width: 100%;
+}
+.day-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  justify-content: center;
+}
+
+.day-btn {
+  background: #FFFDF8;
+  border: 1.5px solid #D3C9B8;
+  border-radius: 50px;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 50px;
+}
+
+.day-btn:hover {
+  background: #F5F0E8;
+}
+
+.day-btn.selected {
+  background: #C8D8C0;
+  border-color: #8AAC82;
+  color: #2C4A28;
+  font-weight: 500;
+}
+
+.freq-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.freq-btn {
+  background: #FFFDF8;
+  border: 1.5px solid #D3C9B8;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.freq-btn:hover {
+  background: #F5F0E8;
+}
+
+.freq-btn.selected {
+  background: #C8D8C0;
+  border-color: #8AAC82;
+  color: #2C4A28;
+  font-weight: 500;
 }
