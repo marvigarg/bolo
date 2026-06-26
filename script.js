@@ -17,7 +17,20 @@ document.getElementById('someoneBtn').addEventListener('click', function() {
   document.getElementById('nameScreen').style.display = 'flex'
 })
 
+document.getElementById('nameInput').addEventListener('input', function() {
+  document.getElementById('nameError').style.display = 'none'
+})
+
 document.getElementById('nameNextBtn').addEventListener('click', function() {
+  var nameValue = document.getElementById('nameInput').value.trim()
+  var nameError = document.getElementById('nameError')
+
+  if (nameValue === '') {
+    nameError.style.display = 'block'
+    return
+  }
+
+  nameError.style.display = 'none'
   document.getElementById('nameScreen').style.display = 'none'
   document.getElementById('languageScreen').style.display = 'flex'
 })
@@ -28,10 +41,20 @@ document.querySelectorAll('.lang-btn').forEach(function(btn) {
       b.classList.remove('selected')
     })
     btn.classList.add('selected')
+    document.getElementById('langError').style.display = 'none'
   })
 })
 
 document.getElementById('langNextBtn').addEventListener('click', function() {
+  var selectedLang = document.querySelector('.lang-btn.selected')
+  var langError = document.getElementById('langError')
+
+  if (!selectedLang) {
+    langError.style.display = 'block'
+    return
+  }
+
+  langError.style.display = 'none'
   document.getElementById('languageScreen').style.display = 'none'
   document.getElementById('medicineScreen').style.display = 'flex'
 })
@@ -39,6 +62,7 @@ document.getElementById('langNextBtn').addEventListener('click', function() {
 document.querySelectorAll('.day-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     btn.classList.toggle('selected')
+    document.getElementById('medError').style.display = 'none'
   })
 })
 
@@ -51,16 +75,47 @@ document.querySelectorAll('.freq-btn').forEach(function(btn) {
   })
 })
 
+;['medNameInput', 'medDosageInput', 'medCountInput', 'medTimeInput'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() {
+    document.getElementById('medError').style.display = 'none'
+  })
+})
+
 document.getElementById('medNextBtn').addEventListener('click', function() {
+  var medName = document.getElementById('medNameInput').value.trim()
+  var medDosage = document.getElementById('medDosageInput').value.trim()
+  var medCount = document.getElementById('medCountInput').value.trim()
+  var medTime = document.getElementById('medTimeInput').value.trim()
+  var selectedDays = document.querySelectorAll('.day-btn.selected')
+  var medError = document.getElementById('medError')
+
+  if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0) {
+    medError.style.display = 'block'
+    return
+  }
+
+  medError.style.display = 'none'
   document.getElementById('medicineScreen').style.display = 'none'
   document.getElementById('patientHomeScreen').style.display = 'flex'
 
-  var medName = document.getElementById('medNameInput').value
-  var medTime = document.getElementById('medTimeInput').value
+  var medNotes = document.getElementById('medNotesInput').value
+
   document.getElementById('nextMedName').textContent = medName
   document.getElementById('nextMedTime').textContent = 'Today at ' + medTime
 
-  var speech = new SpeechSynthesisUtterance('Time to take ' + medName)
+  var notesEl = document.getElementById('nextMedNotes')
+  if (medNotes.trim() !== '') {
+    notesEl.textContent = medNotes
+    notesEl.style.display = 'block'
+  } else {
+    notesEl.style.display = 'none'
+  }
+
+  var speechText = 'Time to take ' + medName
+  if (medNotes.trim() !== '') {
+    speechText += '. ' + medNotes
+  }
+  var speech = new SpeechSynthesisUtterance(speechText)
   window.speechSynthesis.speak(speech)
 })
 

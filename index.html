@@ -40,6 +40,7 @@
           <p class="section-label" id="nameLabel">What is your name?</p>
           <div class="home-card">
             <input type="text" id="nameInput" placeholder="Enter your name" />
+            <p class="error-message" id="nameError" style="display: none;">Please enter a name to continue</p>
             <button class="next-btn" id="nameNextBtn">Next</button>
           </div>
         </div>
@@ -74,54 +75,63 @@
               <span class="slider"></span>
             </label>
           </div>
+          <p class="error-message" id="langError" style="display: none;">Please choose a language to continue</p>
           <button class="next-btn" id="langNextBtn">Next</button>
         </div>
       </div>
 
       <div class="screen" id="medicineScreen" style="display: none;">
-        <div class="content">
-          <p class="section-label">Add a medicine</p>
-          <div class="home-card">
-            <input type="text" id="medNameInput" placeholder="Medicine name" />
-            <input type="number" id="medDosageInput" placeholder="Dosage (number of tablets)" />
-            <input type="number" id="medCountInput" placeholder="Starting tablet count" />
-            <input type="time" id="medTimeInput" />
-
-            <p class="section-label" style="margin-top: 16px;">Which days?</p>
-            <div class="day-picker">
-              <button class="day-btn" data-day="mon">Mon</button>
-              <button class="day-btn" data-day="tue">Tue</button>
-              <button class="day-btn" data-day="wed">Wed</button>
-              <button class="day-btn" data-day="thu">Thu</button>
-              <button class="day-btn" data-day="fri">Fri</button>
-              <button class="day-btn" data-day="sat">Sat</button>
-              <button class="day-btn" data-day="sun">Sun</button>
-            </div>
-
-            <p class="section-label" style="margin-top: 16px;">How often?</p>
-            <div class="freq-picker">
-              <button class="freq-btn selected" data-freq="weekly">Every week</button>
-              <button class="freq-btn" data-freq="biweekly">Every 2 weeks</button>
-              <button class="freq-btn" data-freq="monthly">Every month</button>
-            </div>
-
-            <button class="next-btn" id="medNextBtn" style="margin-top: 16px;">Add medicine</button>
-          </div>
-        </div>
-      </div>
-<div class="screen" id="patientHomeScreen" style="display: none;">
   <div class="content">
-    <p class="section-label">Next reminder</p>
-    <div class="reminder-card">
-      <p class="reminder-med" id="nextMedName">Metformin</p>
-      <p class="reminder-time" id="nextMedTime">Today at 2:00 PM</p>
-    </div>
-    <p class="hold-hint">Hold anywhere for 3 seconds, or say "I took it"</p>
-    <div class="hold-zone" id="holdZone">
-      <span id="holdLabel">Hold to confirm</span>
+    <p class="section-label">Add a medicine</p>
+    <div class="home-card">
+      <input type="text" id="medNameInput" placeholder="Medicine name" />
+      <input type="number" id="medDosageInput" placeholder="Dosage (number of tablets)" />
+      <input type="number" id="medCountInput" placeholder="Starting tablet count" />
+      <input type="time" id="medTimeInput" />
+
+      <p class="section-label" style="margin-top: 16px;">Which days?</p>
+      <div class="day-picker">
+        <button class="day-btn" data-day="mon">Mon</button>
+        <button class="day-btn" data-day="tue">Tue</button>
+        <button class="day-btn" data-day="wed">Wed</button>
+        <button class="day-btn" data-day="thu">Thu</button>
+        <button class="day-btn" data-day="fri">Fri</button>
+        <button class="day-btn" data-day="sat">Sat</button>
+        <button class="day-btn" data-day="sun">Sun</button>
+      </div>
+
+      <p class="section-label" style="margin-top: 16px;">How often?</p>
+      <div class="freq-picker">
+        <button class="freq-btn selected" data-freq="weekly">Every week</button>
+        <button class="freq-btn" data-freq="biweekly">Every 2 weeks</button>
+        <button class="freq-btn" data-freq="monthly">Every month</button>
+      </div>
+
+      <p class="section-label" style="margin-top: 16px;">Anything else to know?</p>
+      <textarea id="medNotesInput" placeholder="e.g. take with food, before bed, watch for dizziness (optional)"></textarea>
+
+      <p class="error-message" id="medError" style="display: none;">Please fill in medicine name, dosage, starting count, time, and at least one day to continue</p>
+
+      <button class="next-btn" id="medNextBtn" style="margin-top: 16px;">Add medicine</button>
     </div>
   </div>
 </div>
+
+      <div class="screen" id="patientHomeScreen" style="display: none;">
+        <div class="content">
+          <p class="section-label">Next reminder</p>
+          <div class="reminder-card">
+            <p class="reminder-med" id="nextMedName">Metformin</p>
+            <p class="reminder-time" id="nextMedTime">Today at 2:00 PM</p>
+            <p class="reminder-notes" id="nextMedNotes"></p>
+          </div>
+          <p class="hold-hint">Hold anywhere for 3 seconds, or say "I took it"</p>
+          <div class="hold-zone" id="holdZone">
+            <span id="holdLabel">Hold to confirm</span>
+          </div>
+        </div>
+      </div>
+
       <script src="script.js"></script>
     </div>
   </body>

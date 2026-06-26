@@ -1,4 +1,4 @@
- *{
+*{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -123,6 +123,28 @@ input[type="text"], input[type="number"], input[type="time"] {
   background: #F5F0E8;
   margin-bottom: 16px;
   outline: none;
+}
+
+textarea {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-family: inherit;
+  border: 0.5px solid #D3C9B8;
+  border-radius: 14px;
+  background: #F5F0E8;
+  margin-bottom: 16px;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.error-message {
+  color: #C0392B;
+  font-size: 14px;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  text-align: center;
 }
 
 #homeScreen {
@@ -380,6 +402,14 @@ input:checked + .slider:before {
   color: #888780;
 }
 
+.reminder-notes {
+  font-size: 15px;
+  color: #2C4A28;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E8DFD3;
+}
+
 .hold-hint {
   font-size: 14px;
   color: #B4B2A9;
@@ -431,56 +461,6 @@ input:checked + .slider:before {
 }
 
 #holdLabel {
-  position: relative;
-  z-index: 1;
-}
-.confirm-screen {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fdf6ec;
-}
-
-.confirm-button {
-  width: 80vmin;
-  height: 80vmin;
-  max-width: 500px;
-  max-height: 500px;
-  border-radius: 50%;
-  border: none;
-  background: #4a7c59;
-  color: white;
-  font-size: 2.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  touch-action: none;
-  transition: transform 0.1s ease;
-}
-
-.confirm-button:active {
-  transform: scale(0.97);
-}
-
-.confirm-button::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: #2f5233;
-  transform: scaleY(0);
-  transform-origin: bottom;
-  transition: transform var(--fill-duration, 1500ms) linear;
-  z-index: 0;
-}
-
-.confirm-button.filling::before {
-  transform: scaleY(1);
-}
-
-.confirm-label {
   position: relative;
   z-index: 1;
 }
