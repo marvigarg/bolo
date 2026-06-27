@@ -32,7 +32,39 @@ document.getElementById('nameNextBtn').addEventListener('click', function() {
 
   nameError.style.display = 'none'
   document.getElementById('nameScreen').style.display = 'none'
+  document.getElementById('accessibilityScreen').style.display = 'flex'
+})
+
+var visionCheck = document.getElementById('visionCheck')
+var hearingCheck = document.getElementById('hearingCheck')
+var noneCheck = document.getElementById('noneCheck')
+
+visionCheck.addEventListener('change', function() {
+  if (visionCheck.checked || hearingCheck.checked) {
+    noneCheck.checked = false
+  }
+})
+
+hearingCheck.addEventListener('change', function() {
+  if (visionCheck.checked || hearingCheck.checked) {
+    noneCheck.checked = false
+  }
+})
+
+noneCheck.addEventListener('change', function() {
+  if (noneCheck.checked) {
+    visionCheck.checked = false
+    hearingCheck.checked = false
+  }
+})
+
+document.getElementById('accessNextBtn').addEventListener('click', function() {
+  document.getElementById('accessibilityScreen').style.display = 'none'
   document.getElementById('languageScreen').style.display = 'flex'
+
+  if (visionCheck.checked) {
+    document.querySelector('.app').classList.add('large-text')
+  }
 })
 
 document.querySelectorAll('.lang-btn').forEach(function(btn) {
@@ -122,14 +154,20 @@ document.getElementById('medNextBtn').addEventListener('click', function() {
 var holdTimer = null
 var holdZone = document.getElementById('holdZone')
 var HOLD_DURATION = 3000 // ms — how long to hold; fill animation matches this exactly
+var isConfirmed = false
 
 holdZone.addEventListener('pointerdown', function() {
+  if (isConfirmed) return
+
   holdZone.style.setProperty('--fill-duration', HOLD_DURATION + 'ms')
   holdZone.classList.add('holding')
   document.getElementById('holdLabel').textContent = 'Keep holding...'
   if (navigator.vibrate) navigator.vibrate(50)
 
   holdTimer = setTimeout(function() {
+    isConfirmed = true
+    holdZone.classList.remove('holding')
+    holdZone.classList.add('confirmed')
     document.getElementById('holdLabel').textContent = 'Confirmed!'
     if (navigator.vibrate) navigator.vibrate([100, 50, 100])
   }, HOLD_DURATION)
@@ -137,14 +175,16 @@ holdZone.addEventListener('pointerdown', function() {
 
 holdZone.addEventListener('pointerup', function() {
   clearTimeout(holdTimer)
-  holdZone.classList.remove('holding')
-  if (document.getElementById('holdLabel').textContent !== 'Confirmed!') {
+  if (!isConfirmed) {
+    holdZone.classList.remove('holding')
     document.getElementById('holdLabel').textContent = 'Hold to confirm'
   }
 })
 
 holdZone.addEventListener('pointercancel', function() {
   clearTimeout(holdTimer)
-  holdZone.classList.remove('holding')
-  document.getElementById('holdLabel').textContent = 'Hold to confirm'
+  if (!isConfirmed) {
+    holdZone.classList.remove('holding')
+    document.getElementById('holdLabel').textContent = 'Hold to confirm'
+  }
 })

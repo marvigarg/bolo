@@ -45,7 +45,26 @@
           </div>
         </div>
       </div>
-
+<div class="screen" id="accessibilityScreen" style="display: none;">
+  <div class="content">
+    <p class="section-label">Does the patient have any difficulty with...</p>
+    <div class="home-card">
+      <label class="checkbox-row">
+        <input type="checkbox" id="visionCheck" />
+        <span>Vision</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="hearingCheck" />
+        <span>Hearing</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="noneCheck" checked />
+        <span>None of these, that's fine</span>
+      </label>
+      <button class="next-btn" id="accessNextBtn" style="margin-top: 16px;">Next</button>
+    </div>
+  </div>
+</div>
       <div class="screen" id="languageScreen" style="display: none;">
         <div class="content">
           <p class="section-label">What language do you prefer?</p>

@@ -1,4 +1,4 @@
-*{
+ *{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -191,6 +191,64 @@ textarea {
 .who-btns .mode-btn {
   flex: 1;
   min-height: 400px;
+}
+
+#accessibilityScreen .content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+#accessibilityScreen .home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  color: #2C2C2A;
+  text-align: left;
+  background: #F5F0E8;
+  border: 0.5px solid #D3C9B8;
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: #8AAC82;
+  cursor: pointer;
+}
+
+.app.large-text .section-label,
+.app.large-text .home-card p,
+.app.large-text .mode-sub,
+.app.large-text .toggle-label,
+.app.large-text .checkbox-row span {
+  font-size: 1.15em;
+}
+
+.app.large-text .home-card h2 {
+  font-size: 1.3em;
+}
+
+.app.large-text .next-btn,
+.app.large-text .lang-btn,
+.app.large-text .day-btn,
+.app.large-text .freq-btn {
+  font-size: 1.15em;
+  padding: 1.2em;
 }
 
 #languageScreen .content {
@@ -457,6 +515,15 @@ input:checked + .slider:before {
 }
 
 .hold-zone.holding {
+  color: #FFFDF8;
+}
+
+.hold-zone.confirmed::before {
+  transform: scaleY(1);
+  transition: none;
+}
+
+.hold-zone.confirmed {
   color: #FFFDF8;
 }
 
