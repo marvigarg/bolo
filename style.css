@@ -531,3 +531,108 @@ input:checked + .slider:before {
   position: relative;
   z-index: 1;
 }
+#reminderLabel {
+  background: #C8D8C0;
+  color: #2C4A28;
+  border-radius: 50px;
+  padding: 8px 20px;
+  display: inline-block;
+  letter-spacing: 0.08em;
+  margin-bottom: 0;
+}
+
+.countdown-split {
+  display: flex;
+  gap: 12px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.countdown-unit {
+  flex: 1;
+  background: #FFFDF8;
+  border: 1.5px solid #C8A898;
+  border-radius: 20px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.countdown-number {
+  font-size: 52px;
+  font-weight: 500;
+  color: #2C4A28;
+  margin: 0;
+  line-height: 1;
+}
+
+.countdown-unit-label {
+  font-size: 11px;
+  color: #888780;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 8px 0 0;
+}
+
+.tap-hint {
+  font-size: 12px;
+  color: #C8A898;
+  text-align: center;
+}
+
+.tap-hint {
+  font-size: 13px;
+  color: #B4B2A9;
+  text-align: center;
+}
+
+.reminder-dosage {
+  font-size: 16px;
+  color: #888780;
+  margin-top: 4px;
+}
+
+#checkOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(44, 74, 40, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.check-panel {
+  background: #FFFDF8;
+  border-radius: 24px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+
+.check-title {
+  font-size: 28px;
+  font-weight: 500;
+  color: #2C4A28;
+  margin-bottom: 16px;
+}
+
+.check-detail {
+  font-size: 16px;
+  color: #888780;
+  margin-bottom: 8px;
+}
+
+.check-notes {
+  font-size: 15px;
+  color: #2C4A28;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E8DFD3;
+}
+
+.check-dismiss {
+  font-size: 13px;
+  color: #B4B2A9;
+  margin-top: 24px;
+}
