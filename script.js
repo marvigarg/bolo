@@ -489,6 +489,7 @@ document.querySelectorAll('.freq-btn').forEach(function(btn) {
 // ===== MEDICINE DATA + COUNTDOWN =====
 
 var medicineData = {}
+var medicines = []
 var countdownInterval = null
 var nextReminderDate = null
 
@@ -609,34 +610,32 @@ function startCountdown() {
 
   nextReminderDate = getNextReminderDate(medicineData.days, medicineData.time)
 
-  // Show countdown state
   document.getElementById('countdownState').style.display = 'block'
   document.getElementById('dueState').style.display = 'none'
 
-  // Update card
   document.getElementById('nextMedName').textContent = medicineData.name
   if (nextReminderDate) {
     document.getElementById('nextMedTime').textContent = nextReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
   if (!nextReminderDate) {
-updateCountdownDisplay(diff)
+    document.getElementById('countdownHours').textContent = '0'
+    document.getElementById('countdownMins').textContent = '0'
     return
   }
 
-  // Tick every second
   countdownInterval = setInterval(function() {
     var diff = nextReminderDate - new Date()
     if (diff <= 0) {
       clearInterval(countdownInterval)
-updateCountdownDisplay(nextReminderDate - new Date())
+      updateCountdownDisplay(0)
       fireReminder()
       return
     }
-document.getElementById('countdownTime').textContent = formatCountdown(Math.max(0, diff))
-  }
-  // Set immediately so there's no blank flash
-  document.getElementById('countdownTime').textContent = formatCountdown(nextReminderDate - new Date())
+    updateCountdownDisplay(diff)
+  }, 1000)
+
+  updateCountdownDisplay(nextReminderDate - new Date())
 }
 
 function showCheckOverlay() {
@@ -682,10 +681,18 @@ document.getElementById('medNextBtn').addEventListener('click', function() {
   var selectedDays = document.querySelectorAll('.day-btn.selected')
   var medError = document.getElementById('medError')
 
-  if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0) {
+if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0 || Number(medDosage) < 1 || Number(medCount) < 1) {
     medError.style.display = 'block'
     return
   }
+  var duplicate = medicines.some(function(m) {
+  return m.name.toLowerCase().trim() === medName.toLowerCase().trim()
+})
+
+if (duplicate) {
+  medError.textContent = 'This medicine has already been added'
+  medError.style.display = 'block'
+  return
 
   medError.style.display = 'none'
 
@@ -704,9 +711,30 @@ document.getElementById('medNextBtn').addEventListener('click', function() {
     days: daysArr
   }
 
+  medicines.push(medicineData)
   document.getElementById('medicineScreen').style.display = 'none'
-  document.getElementById('patientHomeScreen').style.display = 'flex'
+  document.getElementById('medicineAddedScreen').style.display = 'flex'
+})
+var medicines = []
 
+document.getElementById('addAnotherBtn').addEventListener('click', function() {
+  document.getElementById('medNameInput').value = ''
+  document.getElementById('medDosageInput').value = ''
+  document.getElementById('medCountInput').value = ''
+  document.getElementById('medTimeInput').value = ''
+  document.getElementById('medNotesInput').value = ''
+  document.getElementById('medError').style.display = 'none'
+  document.querySelectorAll('.day-btn.selected').forEach(function(btn) {
+    btn.classList.remove('selected')
+  })
+  document.getElementById('medicineAddedScreen').style.display = 'none'
+  document.getElementById('medicineScreen').style.display = 'flex'
+})
+
+document.getElementById('doneAddingBtn').addEventListener('click', function() {
+  medicineData = medicines[0]
+  document.getElementById('medicineAddedScreen').style.display = 'none'
+  document.getElementById('patientHomeScreen').style.display = 'flex'
   startCountdown()
 })
 

@@ -106,8 +106,8 @@
           <p class="section-label" id="medScreenLabel">Add a medicine</p>
           <div class="home-card">
             <input type="text" id="medNameInput" placeholder="Medicine name" />
-            <input type="number" id="medDosageInput" placeholder="Dosage (number of tablets)" />
-            <input type="number" id="medCountInput" placeholder="Starting tablet count" />
+            <input type="number" id="medDosageInput" placeholder="Dosage (number of tablets)"min="1" />
+            <input type="number" id="medCountInput" placeholder="Starting tablet count"min="1" />
             <input type="time" id="medTimeInput" />
 
             <p class="section-label" id="daysLabel" style="margin-top: 16px;">Which days?</p>
@@ -137,7 +137,16 @@
           </div>
         </div>
       </div>
-
+<div class="screen" id="medicineAddedScreen" style="display: none;">
+  <div class="content">
+    <div class="home-card" style="display: flex; flex-direction: column; gap: 16px; align-items: center;">
+      <p style="font-size: 22px; font-weight: 500; color: #2C4A28; text-align: center;">Medicine added! ✓</p>
+      <p style="font-size: 15px; color: #888780; text-align: center; margin-bottom: 8px;">What would you like to do?</p>
+      <button class="next-btn" id="addAnotherBtn">+ Add another medicine</button>
+      <button class="done-btn" id="doneAddingBtn">I'm done</button>
+    </div>
+  </div>
+</div>
       <div class="screen" id="patientHomeScreen" style="display: none;">
         <div class="content">
 

@@ -58,6 +58,12 @@ body {
   color: #888780;
   margin-bottom: 32px;
   line-height: 1.6;
+  display: inherit;
+}
+
+.home-card p.error-message {
+  display: none;
+  margin-bottom: 0;
 }
 
 .next-btn {
@@ -635,4 +641,19 @@ input:checked + .slider:before {
   font-size: 13px;
   color: #B4B2A9;
   margin-top: 24px;
+}
+.done-btn {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  color: #8AAC82;
+  border: 2px solid #8AAC82;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.done-btn:hover {
+  background: #F5F0E8;
 }
