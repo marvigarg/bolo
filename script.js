@@ -490,6 +490,7 @@ document.querySelectorAll('.freq-btn').forEach(function(btn) {
 
 var medicineData = {}
 var medicines = []
+var currentMedicineIndex = 0
 var countdownInterval = null
 var nextReminderDate = null
 
@@ -572,6 +573,131 @@ function speakReminder() {
   speech.pitch = 1.05
   window.speechSynthesis.speak(speech)
 }
+var voiceConfirmWords = {
+  en: ['yes', 'yeah', 'yep'],
+  hi: ['हाँ', 'हां', 'haan', 'han'],
+  es: ['sí', 'si'],
+  ar: ['نعم', 'naam'],
+  fr: ['oui'],
+  zh: ['是', 'shi', '对'],
+  pt: ['sim'],
+  ru: ['да', 'da'],
+  ja: ['はい', 'hai'],
+  ko: ['네', 'ne', '예'],
+  de: ['ja'],
+  it: ['sì', 'si'],
+  tr: ['evet'],
+  vi: ['có', 'co'],
+  tl: ['oo'],
+  ur: ['ہاں', 'haan', 'han']
+}
+
+var confirmationPhrases = {
+  en: 'Good job, medicine taken',
+  hi: 'शाबाश, दवाई ले ली',
+  es: 'Muy bien, medicamento tomado',
+  ar: 'أحسنت، تم أخذ الدواء',
+  fr: 'Bien fait, médicament pris',
+  zh: '很好，药已服用',
+  pt: 'Muito bem, medicamento tomado',
+  ru: 'Отлично, лекарство принято',
+  ja: 'よくできました、薬を飲みました',
+  ko: '잘했어요, 약을 먹었어요',
+  de: 'Gut gemacht, Medikament eingenommen',
+  it: 'Ottimo, medicinale preso',
+  tr: 'Aferin, ilaç alındı',
+  vi: 'Giỏi lắm, đã uống thuốc',
+  tl: 'Magaling, nainom na ang gamot',
+  ur: 'شاباش، دوائی لے لی'
+}
+
+var recognition = null
+var isListening = false
+
+function speakConfirmation() {
+  var phrase = confirmationPhrases[selectedLanguage] || confirmationPhrases.en
+  var speech = new SpeechSynthesisUtterance(phrase)
+  speech.lang = speechLangMap[selectedLanguage] || 'en-US'
+  speech.rate = 0.85
+  speech.pitch = 1.05
+  window.speechSynthesis.speak(speech)
+}
+
+function startVoiceListening() {
+  if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) return
+  if (isListening) return
+
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  recognition = new SpeechRecognition()
+  recognition.lang = speechLangMap[selectedLanguage] || 'en-US'
+  recognition.continuous = false
+  recognition.interimResults = false
+
+  recognition.onresult = function(event) {
+    var heard = event.results[0][0].transcript.toLowerCase().trim()
+    var confirmWords = voiceConfirmWords[selectedLanguage] || voiceConfirmWords.en
+
+    var matched = confirmWords.some(function(word) {
+      return heard.includes(word.toLowerCase())
+    })
+
+    if (matched) {
+      stopVoiceListening()
+      triggerVoiceConfirm()
+    } else {
+      // Didn't hear the right word, listen again
+      startVoiceListening()
+    }
+  }
+
+  recognition.onerror = function() {
+    isListening = false
+  }
+
+  recognition.onend = function() {
+    isListening = false
+    // Keep listening if reminder is still active and not confirmed
+    if (!isConfirmed && document.getElementById('dueState').style.display !== 'none') {
+      startVoiceListening()
+    }
+  }
+
+  isListening = true
+  recognition.start()
+}
+
+function stopVoiceListening() {
+  if (recognition) {
+    recognition.stop()
+    recognition = null
+  }
+  isListening = false
+}
+
+function triggerVoiceConfirm() {
+  if (isConfirmed) return
+  isConfirmed = true
+  holdZone.classList.remove('holding')
+  holdZone.classList.add('confirmed')
+  document.getElementById('holdLabel').textContent = getT().confirmedText
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+  speakConfirmation()
+
+  setTimeout(function() {
+    holdZone.classList.remove('confirmed')
+    var soonest = null
+    var soonestDate = null
+    medicines.forEach(function(med) {
+      var nextDate = getNextReminderDate(med.days, med.time)
+      if (nextDate && (!soonestDate || nextDate < soonestDate)) {
+        soonest = med
+        soonestDate = nextDate
+      }
+    })
+    if (soonest) medicineData = soonest
+    startCountdown()
+  }, 3000)
+}
 
 function fireReminder() {
   // Switch to due state
@@ -602,12 +728,16 @@ function fireReminder() {
   var chimeDuration = playChime()
   setTimeout(function() {
     speakReminder()
+    setTimeout(function() {
+      startVoiceListening()
+    }, 2000)
   }, (chimeDuration * 1000) + 300)
 }
 
-function startCountdown() {
-  if (countdownInterval) clearInterval(countdownInterval)
 
+function startCountdown() {
+  stopVoiceListening()
+  if (countdownInterval) clearInterval(countdownInterval)
   nextReminderDate = getNextReminderDate(medicineData.days, medicineData.time)
 
   document.getElementById('countdownState').style.display = 'block'
@@ -682,10 +812,11 @@ document.getElementById('medNextBtn').addEventListener('click', function() {
   var medError = document.getElementById('medError')
 
 if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0 || Number(medDosage) < 1 || Number(medCount) < 1) {
-    medError.style.display = 'block'
-    return
-  }
-  var duplicate = medicines.some(function(m) {
+  medError.style.display = 'block'
+  return
+}
+
+var duplicate = medicines.some(function(m) {
   return m.name.toLowerCase().trim() === medName.toLowerCase().trim()
 })
 
@@ -693,29 +824,28 @@ if (duplicate) {
   medError.textContent = 'This medicine has already been added'
   medError.style.display = 'block'
   return
+}
 
-  medError.style.display = 'none'
+medError.style.display = 'none'
 
-  // Store all medicine data
-  var daysArr = []
-  selectedDays.forEach(function(btn) {
-    daysArr.push(btn.getAttribute('data-day'))
-  })
-
-  medicineData = {
-    name: medName,
-    dosage: medDosage,
-    count: medCount,
-    time: medTime,
-    notes: document.getElementById('medNotesInput').value,
-    days: daysArr
-  }
-
-  medicines.push(medicineData)
-  document.getElementById('medicineScreen').style.display = 'none'
-  document.getElementById('medicineAddedScreen').style.display = 'flex'
+var daysArr = []
+selectedDays.forEach(function(btn) {
+  daysArr.push(btn.getAttribute('data-day'))
 })
-var medicines = []
+
+medicineData = {
+  name: medName,
+  dosage: medDosage,
+  count: medCount,
+  time: medTime,
+  notes: document.getElementById('medNotesInput').value,
+  days: daysArr
+}
+
+medicines.push(medicineData)
+document.getElementById('medicineScreen').style.display = 'none'
+document.getElementById('medicineAddedScreen').style.display = 'flex'
+})
 
 document.getElementById('addAnotherBtn').addEventListener('click', function() {
   document.getElementById('medNameInput').value = ''
@@ -732,6 +862,7 @@ document.getElementById('addAnotherBtn').addEventListener('click', function() {
 })
 
 document.getElementById('doneAddingBtn').addEventListener('click', function() {
+  currentMedicineIndex = 0
   medicineData = medicines[0]
   document.getElementById('medicineAddedScreen').style.display = 'none'
   document.getElementById('patientHomeScreen').style.display = 'flex'
@@ -764,6 +895,17 @@ holdZone.addEventListener('pointerdown', function() {
     // After 2 seconds, go back to countdown for next reminder
     setTimeout(function() {
       holdZone.classList.remove('confirmed')
+      // Find the medicine with the soonest next reminder
+    var soonest = null
+    var soonestDate = null
+    medicines.forEach(function(med) {
+      var nextDate = getNextReminderDate(med.days, med.time)
+  if (nextDate && (!soonestDate || nextDate < soonestDate)) {
+    soonest = med
+    soonestDate = nextDate
+  }
+})
+if (soonest) medicineData = soonest
       startCountdown()
     }, 2000)
   }, HOLD_DURATION)
