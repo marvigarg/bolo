@@ -862,8 +862,16 @@ document.getElementById('addAnotherBtn').addEventListener('click', function() {
 })
 
 document.getElementById('doneAddingBtn').addEventListener('click', function() {
-  currentMedicineIndex = 0
-  medicineData = medicines[0]
+  var soonest = null
+  var soonestDate = null
+  medicines.forEach(function(med) {
+  var nextDate = getNextReminderDate(med.days, med.time)
+  if (nextDate && (!soonestDate || nextDate < soonestDate)) {
+    soonest = med
+    soonestDate = nextDate
+  }
+})
+if (soonest) medicineData = soonest
   document.getElementById('medicineAddedScreen').style.display = 'none'
   document.getElementById('patientHomeScreen').style.display = 'flex'
   startCountdown()
