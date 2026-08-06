@@ -531,8 +531,11 @@ function formatCountdown(ms) {
 }
 function updateCountdownDisplay(ms) {
   var totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  var hours = Math.floor(totalSeconds / 3600)
+  var hours = Math.floor((totalSeconds % 86400) / 3600)
   var minutes = Math.floor((totalSeconds % 3600) / 60)
+  var daysOfSupply = Math.floor(parseInt(medicineData.count) / parseInt(medicineData.dosage))
+
+  document.getElementById('countdownDays').textContent = Math.max(0, daysOfSupply)
   document.getElementById('countdownHours').textContent = hours
   document.getElementById('countdownMins').textContent = minutes
 }
@@ -677,6 +680,8 @@ function stopVoiceListening() {
 function triggerVoiceConfirm() {
   if (isConfirmed) return
   isConfirmed = true
+  medicineData.count = Math.max(0, parseInt(medicineData.count) - parseInt(medicineData.dosage))
+checkLowSupply()
   holdZone.classList.remove('holding')
   holdZone.classList.add('confirmed')
   document.getElementById('holdLabel').textContent = getT().confirmedText
@@ -812,6 +817,13 @@ document.getElementById('medNextBtn').addEventListener('click', function() {
   var medError = document.getElementById('medError')
 
 if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0 || Number(medDosage) < 1 || Number(medCount) < 1) {
+  medError.textContent = getT().medErrorText
+  medError.style.display = 'block'
+  return
+}
+
+if (Number(medDosage) >= Number(medCount)) {
+  medError.textContent = 'Dosage must be less than your starting tablet count'
   medError.style.display = 'block'
   return
 }
@@ -862,16 +874,23 @@ document.getElementById('addAnotherBtn').addEventListener('click', function() {
 })
 
 document.getElementById('doneAddingBtn').addEventListener('click', function() {
-  var soonest = null
+  var soonestMed = null
   var soonestDate = null
   medicines.forEach(function(med) {
-  var nextDate = getNextReminderDate(med.days, med.time)
-  if (nextDate && (!soonestDate || nextDate < soonestDate)) {
-    soonest = med
-    soonestDate = nextDate
-  }
-})
-if (soonest) medicineData = soonest
+    var nextDate = getNextReminderDate(med.days, med.time)
+    if (nextDate && (!soonestDate || nextDate < soonestDate)) {
+      soonestMed = med
+      soonestDate = nextDate
+    }
+  })
+  if (soonestMed) medicineData = soonestMed
+
+  document.getElementById('homeScreen').style.display = 'none'
+  document.getElementById('whoScreen').style.display = 'none'
+  document.getElementById('nameScreen').style.display = 'none'
+  document.getElementById('accessibilityScreen').style.display = 'none'
+  document.getElementById('languageScreen').style.display = 'none'
+  document.getElementById('medicineScreen').style.display = 'none'
   document.getElementById('medicineAddedScreen').style.display = 'none'
   document.getElementById('patientHomeScreen').style.display = 'flex'
   startCountdown()
@@ -895,6 +914,8 @@ holdZone.addEventListener('pointerdown', function() {
 
   holdTimer = setTimeout(function() {
     isConfirmed = true
+    medicineData.count = Math.max(0, parseInt(medicineData.count) - parseInt(medicineData.dosage))
+checkLowSupply()
     holdZone.classList.remove('holding')
     holdZone.classList.add('confirmed')
     document.getElementById('holdLabel').textContent = t.confirmedText
@@ -934,3 +955,27 @@ holdZone.addEventListener('pointercancel', function() {
     document.getElementById('holdLabel').textContent = getT().holdToConfirm
   }
 })
+function checkLowSupply() {
+  var daysOfSupply = Math.floor(parseInt(medicineData.count) / parseInt(medicineData.dosage))
+  if (daysOfSupply <= 7) {
+    var msg = medicineData.name + ' is running low — only ' + daysOfSupply + ' day(s) of supply left'
+    showLowSupplyAlert(msg)
+  }
+}
+
+
+function showLowSupplyAlert(msg) {
+  var existing = document.getElementById('lowSupplyAlert')
+  if (existing) existing.remove()
+
+  var alert = document.createElement('div')
+  alert.id = 'lowSupplyAlert'
+  alert.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#C0392B;color:white;padding:16px 24px;border-radius:14px;font-size:15px;font-weight:500;z-index:200;text-align:center;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);'
+  alert.textContent = msg
+
+  document.body.appendChild(alert)
+
+  setTimeout(function() {
+    alert.remove()
+  }, 6000)
+}

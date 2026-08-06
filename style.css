@@ -436,14 +436,15 @@ input:checked + .slider:before {
   font-weight: 500;
 }
 #patientHomeScreen .content {
-  min-height: 100vh;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
+  padding: 40px 32px;
+  width: 100%;
 }
-
 .reminder-card {
   background: #FFFDF8;
   border: 2px solid #C8A898;
@@ -453,6 +454,7 @@ input:checked + .slider:before {
   max-width: 500px;
   width: 100%;
 }
+
 
 .reminder-med {
   font-size: 32px;
@@ -656,4 +658,25 @@ input:checked + .slider:before {
 
 .done-btn:hover {
   background: #F5F0E8;
+}
+
+#countdownState {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 500px !important;
+}
+#patientHomeScreen {
+  background: #D6E8F5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
 }
