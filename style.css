@@ -707,6 +707,43 @@ input[type="password"] {
   outline: none;
 }
 
+.password-field {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.password-field input {
+  margin-bottom: 0;
+  padding-right: 56px;
+}
+
+.show-password-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  color: #888780;
+  cursor: pointer;
+}
+
+.show-password-btn:hover {
+  color: #2C4A28;
+  background: rgba(138, 172, 130, 0.15);
+}
+
+.show-password-btn:focus-visible {
+  outline: 2px solid #8AAC82;
+}
+
 .pin-input {
   text-align: center;
   font-size: 24px !important;

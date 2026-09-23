@@ -25,7 +25,10 @@
           <p class="section-label" id="authTitle">Create an account</p>
           <div class="home-card">
             <input type="text" id="usernameInput" placeholder="Username" autocomplete="username" autocapitalize="none" />
-            <input type="password" id="passwordInput" placeholder="Password (at least 6 characters)" autocomplete="new-password" />
+            <div class="password-field">
+              <input type="password" id="passwordInput" placeholder="Password (at least 6 characters)" autocomplete="new-password" />
+              <button type="button" class="show-password-btn" aria-label="Show password" aria-controls="passwordInput"></button>
+            </div>
             <p class="error-message" id="authError" style="display: none;"></p>
             <button class="next-btn" id="authSubmitBtn">Create account</button>
             <button class="link-btn" id="authSwitchBtn">Already have an account? Log in</button>
@@ -243,7 +246,10 @@
             <button class="done-btn" id="pinCancelBtn">Cancel</button>
             <button class="link-btn" id="forgotPinBtn">Forgot PIN?</button>
             <div id="pinPasswordSection" style="display: none;">
-              <input type="password" id="pinPasswordInput" placeholder="Account password" autocomplete="current-password" />
+              <div class="password-field">
+                <input type="password" id="pinPasswordInput" placeholder="Account password" autocomplete="current-password" />
+                <button type="button" class="show-password-btn" aria-label="Show password" aria-controls="pinPasswordInput"></button>
+              </div>
               <button class="done-btn" id="pinPasswordBtn">Set a new PIN</button>
             </div>
           </div>

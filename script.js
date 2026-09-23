@@ -123,6 +123,22 @@ document.getElementById('authSubmitBtn').addEventListener('click', function() {
     .then(function() { btn.disabled = false })
 })
 
+// Eye button inside each password box: shows or hides what's typed
+var EYE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+var EYE_OFF_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>'
+
+document.querySelectorAll('.show-password-btn').forEach(function(btn) {
+  var input = document.getElementById(btn.getAttribute('aria-controls'))
+  btn.innerHTML = EYE_ICON
+  btn.addEventListener('click', function() {
+    var showing = input.type === 'text'
+    input.type = showing ? 'password' : 'text'
+    btn.innerHTML = showing ? EYE_ICON : EYE_OFF_ICON
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password')
+    input.focus()
+  })
+})
+
 ;['usernameInput', 'passwordInput'].forEach(function(id) {
   document.getElementById(id).addEventListener('keydown', function(e) {
     if (e.key === 'Enter') document.getElementById('authSubmitBtn').click()
