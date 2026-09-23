@@ -18,14 +18,33 @@ I built this for my grandmother. She is blind and Hindi-speaking, and every medi
 ## How I built it
 I leveraged Claude AI throughout the design and development process as a thought partner — from mapping out the user experience to working through technical decisions. Using AI as a collaborative tool allowed me to iterate faster and build more thoughtfully, which is central to how I approach engineering problems.
 
+- Voice confirmation: the patient says "yes" (or "I took it") in their language, and "no" is never mistaken for yes
+- Reminders repeat every 5 minutes, and a dose is logged as missed after 15
+- Caregiver dashboard behind a 4-digit PIN: tablets left, when each medicine runs out, refills, missed-dose and low-supply alerts, and the full dose history
+- One account per caregiver, saved in Firebase so the tablet picks up where it left off after a reload
+
 ## Tech Stack
 - HTML, CSS, JavaScript
-- Web Speech API (SpeechSynthesis) for multilingual voice reminders
-- Firebase (in progress)
-- Python backend (in progress)
+- Web Speech API (SpeechSynthesis + SpeechRecognition) for multilingual voice in and out
+- Firebase Authentication + Cloud Firestore
+
+## Running it
+The mic and voice only work on `localhost` or `https`, not when opening `index.html` directly:
+```
+python3 -m http.server 8000
+```
+Then open http://localhost:8000. Without Firebase set up, the app runs offline and nothing is saved.
+
+## Firebase setup
+1. Create a project at https://console.firebase.google.com
+2. **Authentication** → Sign-in method → enable **Email/Password**
+3. **Firestore Database** → Create database → then paste `firestore.rules` into the **Rules** tab and publish
+4. Project settings → Your apps → add a **Web app** → copy the config into `firebase-config.js`
+
+Data lives at `caregivers/{uid}/patients/{patientId}/medicines` and `/logs`, so one caregiver can have several patients later.
 
 ## Status
-Work in progress — caregiver dashboard, push notifications, and backend in active development.
+Work in progress. Next up: multiple patients per caregiver, and texting the caregiver about missed doses.
 
 ## Get in touch
 marvigarg181@gmail.com

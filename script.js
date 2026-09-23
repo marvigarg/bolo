@@ -1,20 +1,148 @@
-document.getElementById('getStartedBtn').addEventListener('click', function() {
-  document.getElementById('homeScreen').style.display = 'none'
-  document.getElementById('whoScreen').style.display = 'flex'
+// ===== SCREENS =====
+
+var SCREENS = [
+  'homeScreen', 'authScreen', 'whoScreen', 'nameScreen', 'accessibilityScreen', 'languageScreen',
+  'pinSetupScreen', 'medicineScreen', 'medicineAddedScreen', 'patientHomeScreen', 'caregiverScreen'
+]
+
+function showScreen(id) {
+  SCREENS.forEach(function(screenId) {
+    document.getElementById(screenId).style.display = screenId === id ? 'flex' : 'none'
+  })
+}
+
+function showError(el, message) {
+  el.textContent = message
+  el.style.display = 'block'
+}
+
+// 'setup' while the caregiver fills in the forms, then 'patient' or 'caregiver'
+var mode = 'setup'
+var patientName = ''
+var setupFor = 'self'
+var medicines = []
+var doseLog = [] // newest first
+
+// ===== START: restore a signed-in session =====
+
+BoloBackend.onAuthReady(function(user) {
+  if (!user) return
+  BoloBackend.loadProfile()
+    .then(function(profile) { continueWithProfile(profile, true) })
+    .catch(function(err) { showError(document.getElementById('homeError'), err.message) })
 })
 
+// needsTap: the page was just loaded, so the browser won't allow sound until someone taps
+function continueWithProfile(profile, needsTap) {
+  if (profile) restoreProfile(profile)
+  var setupDone = profile && profile.medicines.length > 0 && BoloBackend.hasPin()
+  if (!setupDone) {
+    showScreen('whoScreen')
+  } else if (needsTap) {
+    showScreen('patientHomeScreen')
+    document.getElementById('startOverlay').style.display = 'flex'
+  } else {
+    openPatientMode()
+  }
+}
+
+function restoreProfile(profile) {
+  var patient = profile.patient
+  patientName = patient.patientName || ''
+  setupFor = patient.setupFor || 'self'
+  selectedLanguage = patient.language || 'en'
+  document.getElementById('nameInput').value = patientName
+  document.getElementById('englishToggle').checked = patient.displayInEnglish !== false
+  visionCheck.checked = !!patient.vision
+  hearingCheck.checked = !!patient.hearing
+  noneCheck.checked = !patient.vision && !patient.hearing
+  document.querySelector('.app').classList.toggle('large-text', !!patient.vision)
+  document.querySelectorAll('.lang-btn').forEach(function(btn) {
+    btn.classList.toggle('selected', btn.getAttribute('data-lang') === selectedLanguage)
+  })
+  applyTranslations(selectedLanguage)
+
+  medicines = profile.medicines.map(function(med) {
+    med.scheduledAfter = new Date()
+    return med
+  })
+  doseLog = profile.logs
+}
+
+document.getElementById('startOverlay').addEventListener('click', function() {
+  openPatientMode()
+})
+
+document.getElementById('getStartedBtn').addEventListener('click', function() {
+  showScreen(BoloBackend.isEnabled() ? 'authScreen' : 'whoScreen')
+})
+
+// ===== ACCOUNT (username + password) =====
+
+var authMode = 'signup'
+
+function setAuthMode(newMode) {
+  authMode = newMode
+  var signup = newMode === 'signup'
+  document.getElementById('authTitle').textContent = signup ? 'Create an account' : 'Welcome back'
+  document.getElementById('authSubmitBtn').textContent = signup ? 'Create account' : 'Log in'
+  document.getElementById('authSwitchBtn').textContent = signup ? 'Already have an account? Log in' : 'New here? Create an account'
+  document.getElementById('passwordInput').autocomplete = signup ? 'new-password' : 'current-password'
+  document.getElementById('authError').style.display = 'none'
+}
+
+document.getElementById('authSwitchBtn').addEventListener('click', function() {
+  setAuthMode(authMode === 'signup' ? 'login' : 'signup')
+})
+
+document.getElementById('authSubmitBtn').addEventListener('click', function() {
+  var btn = this
+  var username = document.getElementById('usernameInput').value.trim()
+  var password = document.getElementById('passwordInput').value
+  var authError = document.getElementById('authError')
+
+  if (!/^[a-zA-Z0-9._-]{3,30}$/.test(username)) {
+    showError(authError, 'Username must be 3 to 30 letters, numbers, dots, dashes or underscores')
+    return
+  }
+  if (password.length < 6) {
+    showError(authError, 'Password must be at least 6 characters')
+    return
+  }
+
+  authError.style.display = 'none'
+  btn.disabled = true
+  var request = authMode === 'signup'
+    ? BoloBackend.signUp(username, password)
+    : BoloBackend.logIn(username, password)
+
+  request
+    .then(function() { return BoloBackend.loadProfile() })
+    .then(function(profile) { continueWithProfile(profile, false) })
+    .catch(function(err) { showError(authError, err.message) })
+    .then(function() { btn.disabled = false })
+})
+
+;['usernameInput', 'passwordInput'].forEach(function(id) {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('authSubmitBtn').click()
+  })
+})
+
+// ===== SETUP: who, name, accessibility, language =====
+
 document.getElementById('myselfBtn').addEventListener('click', function() {
-  document.getElementById('whoScreen').style.display = 'none'
+  setupFor = 'self'
   document.getElementById('nameLabel').textContent = 'What is your name?'
   document.getElementById('nameInput').placeholder = 'Enter your name'
-  document.getElementById('nameScreen').style.display = 'flex'
+  showScreen('nameScreen')
 })
 
 document.getElementById('someoneBtn').addEventListener('click', function() {
-  document.getElementById('whoScreen').style.display = 'none'
+  setupFor = 'someone'
   document.getElementById('nameLabel').textContent = 'What is your patient\'s name?'
   document.getElementById('nameInput').placeholder = 'Enter patient\'s name'
-  document.getElementById('nameScreen').style.display = 'flex'
+  showScreen('nameScreen')
 })
 
 document.getElementById('nameInput').addEventListener('input', function() {
@@ -23,16 +151,12 @@ document.getElementById('nameInput').addEventListener('input', function() {
 
 document.getElementById('nameNextBtn').addEventListener('click', function() {
   var nameValue = document.getElementById('nameInput').value.trim()
-  var nameError = document.getElementById('nameError')
-
   if (nameValue === '') {
-    nameError.style.display = 'block'
+    document.getElementById('nameError').style.display = 'block'
     return
   }
-
-  nameError.style.display = 'none'
-  document.getElementById('nameScreen').style.display = 'none'
-  document.getElementById('accessibilityScreen').style.display = 'flex'
+  patientName = nameValue
+  showScreen('accessibilityScreen')
 })
 
 var visionCheck = document.getElementById('visionCheck')
@@ -40,15 +164,11 @@ var hearingCheck = document.getElementById('hearingCheck')
 var noneCheck = document.getElementById('noneCheck')
 
 visionCheck.addEventListener('change', function() {
-  if (visionCheck.checked || hearingCheck.checked) {
-    noneCheck.checked = false
-  }
+  if (visionCheck.checked || hearingCheck.checked) noneCheck.checked = false
 })
 
 hearingCheck.addEventListener('change', function() {
-  if (visionCheck.checked || hearingCheck.checked) {
-    noneCheck.checked = false
-  }
+  if (visionCheck.checked || hearingCheck.checked) noneCheck.checked = false
 })
 
 noneCheck.addEventListener('change', function() {
@@ -59,379 +179,9 @@ noneCheck.addEventListener('change', function() {
 })
 
 document.getElementById('accessNextBtn').addEventListener('click', function() {
-  document.getElementById('accessibilityScreen').style.display = 'none'
-  document.getElementById('languageScreen').style.display = 'flex'
-
-  if (visionCheck.checked) {
-    document.querySelector('.app').classList.add('large-text')
-  }
+  document.querySelector('.app').classList.toggle('large-text', visionCheck.checked)
+  showScreen('languageScreen')
 })
-
-// ===== LANGUAGE / TRANSLATION SYSTEM =====
-
-var selectedLanguage = 'en'
-
-var speechLangMap = {
-  en: 'en-US', hi: 'hi-IN', es: 'es-ES', ar: 'ar-SA', fr: 'fr-FR', zh: 'zh-CN',
-  pt: 'pt-PT', ru: 'ru-RU', ja: 'ja-JP', ko: 'ko-KR', de: 'de-DE', it: 'it-IT',
-  tr: 'tr-TR', vi: 'vi-VN', tl: 'tl-PH', ur: 'ur-PK'
-}
-
-var translations = {
-  en: {
-    medScreenLabel: 'Add a medicine',
-    medNamePlaceholder: 'Medicine name',
-    medDosagePlaceholder: 'Dosage (number of tablets)',
-    medCountPlaceholder: 'Starting tablet count',
-    daysLabel: 'Which days?',
-    days: { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' },
-    freqLabel: 'How often?',
-    weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month',
-    notesLabel: 'Anything else to know?',
-    notesPlaceholder: 'e.g. take with food, before bed, watch for dizziness (optional)',
-    medErrorText: 'Please fill in medicine name, dosage, starting count, time, and at least one day to continue',
-    medNextBtn: 'Add medicine',
-    reminderLabel: 'Next reminder',
-    holdHintText: 'Hold anywhere for 3 seconds, or say "I took it"',
-    holdToConfirm: 'Hold to confirm',
-    keepHolding: 'Keep holding...',
-    confirmedText: 'Confirmed!',
-    speechPrefix: 'Time to take '
-  },
-  hi: {
-    medScreenLabel: 'दवा जोड़ें',
-    medNamePlaceholder: 'दवा का नाम',
-    medDosagePlaceholder: 'खुराक (गोलियों की संख्या)',
-    medCountPlaceholder: 'शुरुआती गोलियों की संख्या',
-    daysLabel: 'कौन से दिन?',
-    days: { mon: 'सोम', tue: 'मंगल', wed: 'बुध', thu: 'गुरु', fri: 'शुक्र', sat: 'शनि', sun: 'रवि' },
-    freqLabel: 'कितनी बार?',
-    weekly: 'हर हफ्ते', biweekly: 'हर 2 हफ्ते', monthly: 'हर महीने',
-    notesLabel: 'और कुछ जानना ज़रूरी है?',
-    notesPlaceholder: 'जैसे खाने के साथ लें, सोने से पहले, चक्कर का ध्यान रखें (वैकल्पिक)',
-    medErrorText: 'कृपया दवा का नाम, खुराक, शुरुआती गिनती, समय और कम से कम एक दिन भरें',
-    medNextBtn: 'दवा जोड़ें',
-    reminderLabel: 'अगला रिमाइंडर',
-    holdHintText: 'कहीं भी 3 सेकंड दबाए रखें, या कहें "मैंने ले ली"',
-    holdToConfirm: 'पुष्टि के लिए दबाए रखें',
-    keepHolding: 'दबाए रखें...',
-    confirmedText: 'पुष्टि हो गई!',
-    speechPrefix: 'अब लेने का समय है '
-  },
-  es: {
-    medScreenLabel: 'Agregar un medicamento',
-    medNamePlaceholder: 'Nombre del medicamento',
-    medDosagePlaceholder: 'Dosis (número de pastillas)',
-    medCountPlaceholder: 'Cantidad inicial de pastillas',
-    daysLabel: '¿Qué días?',
-    days: { mon: 'Lun', tue: 'Mar', wed: 'Mié', thu: 'Jue', fri: 'Vie', sat: 'Sáb', sun: 'Dom' },
-    freqLabel: '¿Con qué frecuencia?',
-    weekly: 'Cada semana', biweekly: 'Cada 2 semanas', monthly: 'Cada mes',
-    notesLabel: '¿Algo más que debamos saber?',
-    notesPlaceholder: 'ej. tomar con comida, antes de dormir, vigilar mareos (opcional)',
-    medErrorText: 'Por favor complete el nombre del medicamento, la dosis, la cantidad inicial, la hora y al menos un día para continuar',
-    medNextBtn: 'Agregar medicamento',
-    reminderLabel: 'Próximo recordatorio',
-    holdHintText: 'Mantenga presionado en cualquier parte por 3 segundos, o diga "Lo tomé"',
-    holdToConfirm: 'Mantenga presionado para confirmar',
-    keepHolding: 'Sigue presionando...',
-    confirmedText: '¡Confirmado!',
-    speechPrefix: 'Es hora de tomar '
-  },
-  ar: {
-    medScreenLabel: 'إضافة دواء',
-    medNamePlaceholder: 'اسم الدواء',
-    medDosagePlaceholder: 'الجرعة (عدد الأقراص)',
-    medCountPlaceholder: 'عدد الأقراص الأولي',
-    daysLabel: 'ما هي الأيام؟',
-    days: { mon: 'إثنين', tue: 'ثلاثاء', wed: 'أربعاء', thu: 'خميس', fri: 'جمعة', sat: 'سبت', sun: 'أحد' },
-    freqLabel: 'كم مرة؟',
-    weekly: 'كل أسبوع', biweekly: 'كل أسبوعين', monthly: 'كل شهر',
-    notesLabel: 'هل هناك شيء آخر يجب معرفته؟',
-    notesPlaceholder: 'مثال: تناوله مع الطعام، قبل النوم، انتبه للدوار (اختياري)',
-    medErrorText: 'يرجى تعبئة اسم الدواء والجرعة والعدد الأولي والوقت ويوم واحد على الأقل للمتابعة',
-    medNextBtn: 'إضافة الدواء',
-    reminderLabel: 'التذكير التالي',
-    holdHintText: 'اضغط مطولاً في أي مكان لمدة 3 ثوانٍ، أو قل "لقد تناولته"',
-    holdToConfirm: 'اضغط مطولاً للتأكيد',
-    keepHolding: 'استمر بالضغط...',
-    confirmedText: 'تم التأكيد!',
-    speechPrefix: 'حان وقت تناول '
-  },
-  fr: {
-    medScreenLabel: 'Ajouter un médicament',
-    medNamePlaceholder: 'Nom du médicament',
-    medDosagePlaceholder: 'Dosage (nombre de comprimés)',
-    medCountPlaceholder: 'Nombre initial de comprimés',
-    daysLabel: 'Quels jours ?',
-    days: { mon: 'Lun', tue: 'Mar', wed: 'Mer', thu: 'Jeu', fri: 'Ven', sat: 'Sam', sun: 'Dim' },
-    freqLabel: 'À quelle fréquence ?',
-    weekly: 'Chaque semaine', biweekly: 'Toutes les 2 semaines', monthly: 'Chaque mois',
-    notesLabel: 'Autre chose à savoir ?',
-    notesPlaceholder: 'ex. à prendre avec de la nourriture, avant de dormir, attention aux vertiges (facultatif)',
-    medErrorText: 'Veuillez remplir le nom du médicament, le dosage, le nombre initial, l\'heure et au moins un jour pour continuer',
-    medNextBtn: 'Ajouter le médicament',
-    reminderLabel: 'Prochain rappel',
-    holdHintText: 'Maintenez appuyé n\'importe où pendant 3 secondes, ou dites "Je l\'ai pris"',
-    holdToConfirm: 'Maintenez appuyé pour confirmer',
-    keepHolding: 'Continuez à appuyer...',
-    confirmedText: 'Confirmé !',
-    speechPrefix: 'Il est temps de prendre '
-  },
-  zh: {
-    medScreenLabel: '添加药物',
-    medNamePlaceholder: '药物名称',
-    medDosagePlaceholder: '剂量（药片数量）',
-    medCountPlaceholder: '初始药片数量',
-    daysLabel: '哪几天？',
-    days: { mon: '周一', tue: '周二', wed: '周三', thu: '周四', fri: '周五', sat: '周六', sun: '周日' },
-    freqLabel: '频率？',
-    weekly: '每周', biweekly: '每两周', monthly: '每月',
-    notesLabel: '还有什么需要注意的吗？',
-    notesPlaceholder: '例如：随餐服用、睡前服用、注意头晕（可选）',
-    medErrorText: '请填写药物名称、剂量、初始数量、时间和至少一天后继续',
-    medNextBtn: '添加药物',
-    reminderLabel: '下一次提醒',
-    holdHintText: '按住屏幕任意位置3秒，或说"我吃了"',
-    holdToConfirm: '按住以确认',
-    keepHolding: '继续按住...',
-    confirmedText: '已确认！',
-    speechPrefix: '该吃药了：'
-  },
-  pt: {
-    medScreenLabel: 'Adicionar um medicamento',
-    medNamePlaceholder: 'Nome do medicamento',
-    medDosagePlaceholder: 'Dosagem (número de comprimidos)',
-    medCountPlaceholder: 'Quantidade inicial de comprimidos',
-    daysLabel: 'Quais dias?',
-    days: { mon: 'Seg', tue: 'Ter', wed: 'Qua', thu: 'Qui', fri: 'Sex', sat: 'Sáb', sun: 'Dom' },
-    freqLabel: 'Com que frequência?',
-    weekly: 'Toda semana', biweekly: 'A cada 2 semanas', monthly: 'Todo mês',
-    notesLabel: 'Algo mais a saber?',
-    notesPlaceholder: 'ex. tomar com comida, antes de dormir, atenção a tonturas (opcional)',
-    medErrorText: 'Por favor preencha o nome do medicamento, dosagem, quantidade inicial, horário e pelo menos um dia para continuar',
-    medNextBtn: 'Adicionar medicamento',
-    reminderLabel: 'Próximo lembrete',
-    holdHintText: 'Segure em qualquer lugar por 3 segundos, ou diga "Eu tomei"',
-    holdToConfirm: 'Segure para confirmar',
-    keepHolding: 'Continue segurando...',
-    confirmedText: 'Confirmado!',
-    speechPrefix: 'Hora de tomar '
-  },
-  ru: {
-    medScreenLabel: 'Добавить лекарство',
-    medNamePlaceholder: 'Название лекарства',
-    medDosagePlaceholder: 'Доза (количество таблеток)',
-    medCountPlaceholder: 'Начальное количество таблеток',
-    daysLabel: 'Какие дни?',
-    days: { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' },
-    freqLabel: 'Как часто?',
-    weekly: 'Каждую неделю', biweekly: 'Раз в 2 недели', monthly: 'Каждый месяц',
-    notesLabel: 'Есть ли что-то ещё, что нужно знать?',
-    notesPlaceholder: 'напр. принимать с едой, перед сном, следить за головокружением (необязательно)',
-    medErrorText: 'Пожалуйста, заполните название лекарства, дозу, начальное количество, время и выберите хотя бы один день',
-    medNextBtn: 'Добавить лекарство',
-    reminderLabel: 'Следующее напоминание',
-    holdHintText: 'Удерживайте экран 3 секунды или скажите "Я принял"',
-    holdToConfirm: 'Удерживайте для подтверждения',
-    keepHolding: 'Продолжайте удерживать...',
-    confirmedText: 'Подтверждено!',
-    speechPrefix: 'Пора принять '
-  },
-  ja: {
-    medScreenLabel: '薬を追加',
-    medNamePlaceholder: '薬の名前',
-    medDosagePlaceholder: '用量（錠数）',
-    medCountPlaceholder: '初期の錠数',
-    daysLabel: 'どの曜日？',
-    days: { mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日' },
-    freqLabel: '頻度は？',
-    weekly: '毎週', biweekly: '2週間ごと', monthly: '毎月',
-    notesLabel: '他に知っておくべきことは？',
-    notesPlaceholder: '例：食事と一緒に、就寝前に、めまいに注意（任意）',
-    medErrorText: '薬の名前、用量、初期の錠数、時間、少なくとも1日を入力してください',
-    medNextBtn: '薬を追加',
-    reminderLabel: '次のリマインダー',
-    holdHintText: '画面のどこでも3秒間押し続けるか、「飲みました」と言ってください',
-    holdToConfirm: '押し続けて確認',
-    keepHolding: '押し続けてください...',
-    confirmedText: '確認しました！',
-    speechPrefix: '服用の時間です: '
-  },
-  ko: {
-    medScreenLabel: '약 추가',
-    medNamePlaceholder: '약 이름',
-    medDosagePlaceholder: '복용량 (알약 개수)',
-    medCountPlaceholder: '시작 알약 개수',
-    daysLabel: '어떤 요일?',
-    days: { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' },
-    freqLabel: '얼마나 자주?',
-    weekly: '매주', biweekly: '격주', monthly: '매달',
-    notesLabel: '알아야 할 다른 사항이 있나요?',
-    notesPlaceholder: '예: 음식과 함께, 자기 전에, 어지럼증 주의 (선택사항)',
-    medErrorText: '약 이름, 복용량, 시작 개수, 시간, 최소 하루를 입력해 주세요',
-    medNextBtn: '약 추가',
-    reminderLabel: '다음 알림',
-    holdHintText: '화면 아무 곳이나 3초간 누르거나 "먹었어요"라고 말하세요',
-    holdToConfirm: '눌러서 확인',
-    keepHolding: '계속 누르세요...',
-    confirmedText: '확인됨!',
-    speechPrefix: '복용할 시간입니다: '
-  },
-  de: {
-    medScreenLabel: 'Medikament hinzufügen',
-    medNamePlaceholder: 'Medikamentenname',
-    medDosagePlaceholder: 'Dosierung (Anzahl der Tabletten)',
-    medCountPlaceholder: 'Anfängliche Tablettenanzahl',
-    daysLabel: 'Welche Tage?',
-    days: { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa', sun: 'So' },
-    freqLabel: 'Wie oft?',
-    weekly: 'Jede Woche', biweekly: 'Alle 2 Wochen', monthly: 'Jeden Monat',
-    notesLabel: 'Noch etwas zu beachten?',
-    notesPlaceholder: 'z.B. mit Essen einnehmen, vor dem Schlafen, auf Schwindel achten (optional)',
-    medErrorText: 'Bitte füllen Sie Medikamentenname, Dosierung, Anfangsanzahl, Uhrzeit und mindestens einen Tag aus',
-    medNextBtn: 'Medikament hinzufügen',
-    reminderLabel: 'Nächste Erinnerung',
-    holdHintText: 'Halten Sie 3 Sekunden gedrückt oder sagen Sie "Ich habe es genommen"',
-    holdToConfirm: 'Zum Bestätigen gedrückt halten',
-    keepHolding: 'Weiter gedrückt halten...',
-    confirmedText: 'Bestätigt!',
-    speechPrefix: 'Zeit zur Einnahme von '
-  },
-  it: {
-    medScreenLabel: 'Aggiungi un medicinale',
-    medNamePlaceholder: 'Nome del medicinale',
-    medDosagePlaceholder: 'Dosaggio (numero di compresse)',
-    medCountPlaceholder: 'Numero iniziale di compresse',
-    daysLabel: 'Quali giorni?',
-    days: { mon: 'Lun', tue: 'Mar', wed: 'Mer', thu: 'Gio', fri: 'Ven', sat: 'Sab', sun: 'Dom' },
-    freqLabel: 'Con che frequenza?',
-    weekly: 'Ogni settimana', biweekly: 'Ogni 2 settimane', monthly: 'Ogni mese',
-    notesLabel: 'Altro da sapere?',
-    notesPlaceholder: 'es. assumere con cibo, prima di dormire, attenzione ai capogiri (facoltativo)',
-    medErrorText: 'Inserire nome del medicinale, dosaggio, quantità iniziale, ora e almeno un giorno per continuare',
-    medNextBtn: 'Aggiungi medicinale',
-    reminderLabel: 'Prossimo promemoria',
-    holdHintText: 'Tieni premuto ovunque per 3 secondi, oppure dì "L\'ho preso"',
-    holdToConfirm: 'Tieni premuto per confermare',
-    keepHolding: 'Continua a tenere premuto...',
-    confirmedText: 'Confermato!',
-    speechPrefix: 'È ora di prendere '
-  },
-  tr: {
-    medScreenLabel: 'İlaç ekle',
-    medNamePlaceholder: 'İlaç adı',
-    medDosagePlaceholder: 'Doz (tablet sayısı)',
-    medCountPlaceholder: 'Başlangıç tablet sayısı',
-    daysLabel: 'Hangi günler?',
-    days: { mon: 'Pzt', tue: 'Sal', wed: 'Çar', thu: 'Per', fri: 'Cum', sat: 'Cmt', sun: 'Paz' },
-    freqLabel: 'Ne sıklıkla?',
-    weekly: 'Her hafta', biweekly: 'Her 2 haftada bir', monthly: 'Her ay',
-    notesLabel: 'Bilinmesi gereken başka bir şey var mı?',
-    notesPlaceholder: 'örn. yemekle birlikte alın, yatmadan önce, baş dönmesine dikkat (isteğe bağlı)',
-    medErrorText: 'Lütfen devam etmek için ilaç adı, doz, başlangıç sayısı, saat ve en az bir gün girin',
-    medNextBtn: 'İlaç ekle',
-    reminderLabel: 'Sonraki hatırlatma',
-    holdHintText: 'Herhangi bir yere 3 saniye basılı tutun veya "Aldım" deyin',
-    holdToConfirm: 'Onaylamak için basılı tutun',
-    keepHolding: 'Basılı tutmaya devam edin...',
-    confirmedText: 'Onaylandı!',
-    speechPrefix: 'Alma zamanı: '
-  },
-  vi: {
-    medScreenLabel: 'Thêm thuốc',
-    medNamePlaceholder: 'Tên thuốc',
-    medDosagePlaceholder: 'Liều lượng (số viên)',
-    medCountPlaceholder: 'Số viên ban đầu',
-    daysLabel: 'Những ngày nào?',
-    days: { mon: 'T2', tue: 'T3', wed: 'T4', thu: 'T5', fri: 'T6', sat: 'T7', sun: 'CN' },
-    freqLabel: 'Tần suất?',
-    weekly: 'Mỗi tuần', biweekly: 'Mỗi 2 tuần', monthly: 'Mỗi tháng',
-    notesLabel: 'Còn điều gì khác cần biết không?',
-    notesPlaceholder: 'vd: uống cùng thức ăn, trước khi ngủ, chú ý chóng mặt (không bắt buộc)',
-    medErrorText: 'Vui lòng điền tên thuốc, liều lượng, số lượng ban đầu, thời gian và ít nhất một ngày để tiếp tục',
-    medNextBtn: 'Thêm thuốc',
-    reminderLabel: 'Lời nhắc tiếp theo',
-    holdHintText: 'Giữ ở bất kỳ đâu trong 3 giây, hoặc nói "Tôi đã uống"',
-    holdToConfirm: 'Giữ để xác nhận',
-    keepHolding: 'Tiếp tục giữ...',
-    confirmedText: 'Đã xác nhận!',
-    speechPrefix: 'Đến giờ uống '
-  },
-  tl: {
-    medScreenLabel: 'Magdagdag ng gamot',
-    medNamePlaceholder: 'Pangalan ng gamot',
-    medDosagePlaceholder: 'Dosis (bilang ng tableta)',
-    medCountPlaceholder: 'Paunang bilang ng tableta',
-    daysLabel: 'Anong mga araw?',
-    days: { mon: 'Lun', tue: 'Mar', wed: 'Miy', thu: 'Huw', fri: 'Biy', sat: 'Sab', sun: 'Lin' },
-    freqLabel: 'Gaano kadalas?',
-    weekly: 'Bawat linggo', biweekly: 'Bawat 2 linggo', monthly: 'Bawat buwan',
-    notesLabel: 'May iba pa bang dapat malaman?',
-    notesPlaceholder: 'hal. inumin kasabay ng pagkain, bago matulog, bantayan ang pagkahilo (opsyonal)',
-    medErrorText: 'Pakipunan ang pangalan ng gamot, dosis, paunang bilang, oras, at kahit isang araw para magpatuloy',
-    medNextBtn: 'Idagdag ang gamot',
-    reminderLabel: 'Susunod na paalala',
-    holdHintText: 'Pindutin nang matagal kahit saan sa loob ng 3 segundo, o sabihing "Nainom ko na"',
-    holdToConfirm: 'Pindutin nang matagal para kumpirmahin',
-    keepHolding: 'Patuloy na pindutin...',
-    confirmedText: 'Nakumpirma!',
-    speechPrefix: 'Oras na para inumin ang '
-  },
-  ur: {
-    medScreenLabel: 'دوا شامل کریں',
-    medNamePlaceholder: 'دوا کا نام',
-    medDosagePlaceholder: 'خوراک (گولیوں کی تعداد)',
-    medCountPlaceholder: 'ابتدائی گولیوں کی تعداد',
-    daysLabel: 'کون سے دن؟',
-    days: { mon: 'پیر', tue: 'منگل', wed: 'بدھ', thu: 'جمعرات', fri: 'جمعہ', sat: 'ہفتہ', sun: 'اتوار' },
-    freqLabel: 'کتنی بار؟',
-    weekly: 'ہر ہفتے', biweekly: 'ہر 2 ہفتے', monthly: 'ہر مہینے',
-    notesLabel: 'کیا کوئی اور بات جاننا ضروری ہے؟',
-    notesPlaceholder: 'مثلاً کھانے کے ساتھ لیں، سونے سے پہلے، چکر کا خیال رکھیں (اختیاری)',
-    medErrorText: 'براہ کرم دوا کا نام، خوراک، ابتدائی تعداد، وقت، اور کم از کم ایک دن درج کریں',
-    medNextBtn: 'دوا شامل کریں',
-    reminderLabel: 'اگلی یاد دہانی',
-    holdHintText: 'کہیں بھی 3 سیکنڈ دبائے رکھیں، یا کہیں "میں نے لے لی"',
-    holdToConfirm: 'تصدیق کے لیے دبائے رکھیں',
-    keepHolding: 'دبائے رکھیں...',
-    confirmedText: 'تصدیق ہو گئی!',
-    speechPrefix: 'لینے کا وقت ہو گیا: '
-  }
-}
-
-function getT() {
-  var showEnglishText = document.getElementById('englishToggle').checked
-  return showEnglishText ? translations.en : (translations[selectedLanguage] || translations.en)
-}
-
-function applyTranslations(langCode) {
-  var t = getT()
-
-  document.getElementById('medScreenLabel').textContent = t.medScreenLabel
-  document.getElementById('medNameInput').placeholder = t.medNamePlaceholder
-  document.getElementById('medDosageInput').placeholder = t.medDosagePlaceholder
-  document.getElementById('medCountInput').placeholder = t.medCountPlaceholder
-  document.getElementById('daysLabel').textContent = t.daysLabel
-  document.getElementById('freqLabel').textContent = t.freqLabel
-  document.getElementById('notesLabel').textContent = t.notesLabel
-  document.getElementById('medNotesInput').placeholder = t.notesPlaceholder
-  document.getElementById('medError').textContent = t.medErrorText
-  document.getElementById('medNextBtn').textContent = t.medNextBtn
-  document.getElementById('reminderLabel').textContent = t.reminderLabel
-  document.getElementById('holdHintText').textContent = t.holdHintText
-  document.getElementById('holdLabel').textContent = t.holdToConfirm
-
-  document.querySelectorAll('.day-btn').forEach(function(btn) {
-    btn.textContent = t.days[btn.getAttribute('data-day')]
-  })
-
-  document.querySelector('.freq-btn[data-freq="weekly"]').textContent = t.weekly
-  document.querySelector('.freq-btn[data-freq="biweekly"]').textContent = t.biweekly
-  document.querySelector('.freq-btn[data-freq="monthly"]').textContent = t.monthly
-}
-
-// ===== END LANGUAGE / TRANSLATION SYSTEM =====
 
 document.querySelectorAll('.lang-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
@@ -445,24 +195,82 @@ document.querySelectorAll('.lang-btn').forEach(function(btn) {
 
 document.getElementById('langNextBtn').addEventListener('click', function() {
   var selectedLangBtn = document.querySelector('.lang-btn.selected')
-  var langError = document.getElementById('langError')
-
   if (!selectedLangBtn) {
-    langError.style.display = 'block'
+    document.getElementById('langError').style.display = 'block'
     return
   }
 
-  langError.style.display = 'none'
+  document.getElementById('langError').style.display = 'none'
   selectedLanguage = selectedLangBtn.getAttribute('data-lang')
   applyTranslations(selectedLanguage)
 
-  document.getElementById('languageScreen').style.display = 'none'
-  document.getElementById('medicineScreen').style.display = 'flex'
+  BoloBackend.savePatient({
+    patientName: patientName,
+    setupFor: setupFor,
+    language: selectedLanguage,
+    displayInEnglish: document.getElementById('englishToggle').checked,
+    vision: visionCheck.checked,
+    hearing: hearingCheck.checked
+  })
+  openPinSetup(false)
 })
 
 document.getElementById('englishToggle').addEventListener('change', function() {
   applyTranslations(selectedLanguage)
 })
+
+// ===== SETUP: caregiver PIN =====
+
+var resettingPin = false
+
+function openPinSetup(isReset) {
+  resettingPin = isReset
+  document.getElementById('pinSetupLabel').textContent = isReset ? 'Set a new caregiver PIN' : 'Create a caregiver PIN'
+  document.getElementById('pinInput').value = ''
+  document.getElementById('pinConfirmInput').value = ''
+  document.getElementById('pinSetupError').style.display = 'none'
+  showScreen('pinSetupScreen')
+}
+
+;['pinInput', 'pinConfirmInput', 'pinEntryInput'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)
+  })
+})
+
+document.getElementById('pinSaveBtn').addEventListener('click', function() {
+  var btn = this
+  var pin = document.getElementById('pinInput').value
+  var pinConfirm = document.getElementById('pinConfirmInput').value
+  var pinError = document.getElementById('pinSetupError')
+
+  if (!/^\d{4}$/.test(pin)) {
+    showError(pinError, 'The PIN must be exactly 4 digits')
+    return
+  }
+  if (pin !== pinConfirm) {
+    showError(pinError, 'The two PINs don\'t match')
+    return
+  }
+
+  btn.disabled = true
+  BoloBackend.setPin(pin)
+    .then(function() {
+      if (resettingPin) {
+        resettingPin = false
+        openDashboard()
+      } else {
+        resetMedicineForm()
+        showScreen('medicineScreen')
+      }
+    })
+    .catch(function(err) { showError(pinError, err.message) })
+    .then(function() { btn.disabled = false })
+})
+
+// ===== SETUP: medicines =====
+
+var addingFromDashboard = false
 
 document.querySelectorAll('.day-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
@@ -486,315 +294,483 @@ document.querySelectorAll('.freq-btn').forEach(function(btn) {
   })
 })
 
-// ===== MEDICINE DATA + COUNTDOWN =====
+document.getElementById('medDosageInput').addEventListener('input', function() {
+  if (this.value !== '' && Number(this.value) < 1) this.value = 1
+  this.value = this.value.replace(/[^0-9]/g, '')
+  if (this.value === '0') this.value = 1
+})
 
-var medicineData = {}
-var medicines = []
-var currentMedicineIndex = 0
-var countdownInterval = null
-var nextReminderDate = null
+document.getElementById('medCountInput').addEventListener('input', function() {
+  if (this.value !== '' && Number(this.value) < 1) this.value = 1
+  this.value = this.value.replace(/[^0-9]/g, '')
+  if (this.value === '0') this.value = 1
+})
 
+function resetMedicineForm() {
+  ;['medNameInput', 'medDosageInput', 'medCountInput', 'medTimeInput', 'medNotesInput'].forEach(function(id) {
+    document.getElementById(id).value = ''
+  })
+  document.getElementById('medError').style.display = 'none'
+  document.querySelectorAll('.day-btn.selected').forEach(function(btn) {
+    btn.classList.remove('selected')
+  })
+  document.querySelectorAll('.freq-btn').forEach(function(btn) {
+    btn.classList.toggle('selected', btn.getAttribute('data-freq') === 'weekly')
+  })
+  document.getElementById('medCancelBtn').style.display = addingFromDashboard ? 'block' : 'none'
+}
+
+document.getElementById('medNextBtn').addEventListener('click', function() {
+  var medName = document.getElementById('medNameInput').value.trim()
+  var medDosage = document.getElementById('medDosageInput').value.trim()
+  var medCount = document.getElementById('medCountInput').value.trim()
+  var medTime = document.getElementById('medTimeInput').value.trim()
+  var selectedDays = document.querySelectorAll('.day-btn.selected')
+  var medError = document.getElementById('medError')
+
+  if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0 || Number(medDosage) < 1 || Number(medCount) < 1) {
+    showError(medError, getT().medErrorText)
+    return
+  }
+
+  if (Number(medDosage) >= Number(medCount)) {
+    showError(medError, 'Dosage must be less than your starting tablet count')
+    return
+  }
+
+  var duplicate = medicines.some(function(m) {
+    return m.name.toLowerCase() === medName.toLowerCase()
+  })
+  if (duplicate) {
+    showError(medError, 'This medicine has already been added')
+    return
+  }
+
+  medError.style.display = 'none'
+
+  var daysArr = []
+  selectedDays.forEach(function(btn) {
+    daysArr.push(btn.getAttribute('data-day'))
+  })
+
+  var med = {
+    name: medName,
+    dosage: Number(medDosage),
+    count: Number(medCount),
+    startCount: Number(medCount),
+    time: medTime,
+    days: daysArr,
+    frequency: document.querySelector('.freq-btn.selected').getAttribute('data-freq'),
+    notes: document.getElementById('medNotesInput').value.trim(),
+    startDate: new Date().toISOString(),
+    scheduledAfter: new Date() // only remind for doses after it was added
+  }
+  med.endDate = estimateEndDate(med)
+
+  medicines.push(med)
+  BoloBackend.saveMedicine(med)
+  showScreen('medicineAddedScreen')
+})
+
+document.getElementById('addAnotherBtn').addEventListener('click', function() {
+  resetMedicineForm()
+  showScreen('medicineScreen')
+})
+
+document.getElementById('doneAddingBtn').addEventListener('click', function() {
+  if (addingFromDashboard) {
+    addingFromDashboard = false
+    openDashboard()
+  } else {
+    openPatientMode()
+  }
+})
+
+document.getElementById('medCancelBtn').addEventListener('click', function() {
+  addingFromDashboard = false
+  openDashboard()
+})
+
+// ===== SCHEDULING =====
+
+var DAY_MS = 24 * 60 * 60 * 1000
 var dayIndexMap = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 0 }
+var WEEKS_BETWEEN = { weekly: 1, biweekly: 2, monthly: 4 } // "every month" = every 4 weeks
 
-function getNextReminderDate(days, timeStr) {
-  var parts = timeStr.split(':')
-  var hours = parseInt(parts[0])
-  var minutes = parseInt(parts[1])
-  var selectedDayNums = days.map(function(d) { return dayIndexMap[d] })
-  var now = new Date()
+function startOfDay(date) {
+  var d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
 
-  for (var i = 0; i < 8; i++) {
-    var candidate = new Date(now)
-    candidate.setDate(now.getDate() + i)
-    candidate.setHours(hours, minutes, 0, 0)
-    if (candidate > now && selectedDayNums.indexOf(candidate.getDay()) !== -1) {
+// For "every 2 weeks" / "every month": only weeks counted from the week the medicine was added
+function isScheduledWeek(med, date) {
+  var weeksBetween = WEEKS_BETWEEN[med.frequency] || 1
+  if (weeksBetween === 1) return true
+  var startMonday = startOfDay(med.startDate)
+  startMonday.setDate(startMonday.getDate() - ((startMonday.getDay() + 6) % 7))
+  var daysSince = Math.round((startOfDay(date) - startMonday) / DAY_MS)
+  return Math.floor(daysSince / 7) % weeksBetween === 0
+}
+
+// The first dose time strictly after `after`, or null
+function getNextDoseDate(med, after) {
+  var parts = med.time.split(':')
+  var dayNums = med.days.map(function(d) { return dayIndexMap[d] })
+  var searchDays = 7 * (WEEKS_BETWEEN[med.frequency] || 1) + 1
+
+  for (var i = 0; i <= searchDays; i++) {
+    var candidate = startOfDay(after)
+    candidate.setDate(candidate.getDate() + i)
+    candidate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0)
+    if (candidate > after && dayNums.indexOf(candidate.getDay()) !== -1 && isScheduledWeek(med, candidate)) {
       return candidate
     }
   }
   return null
 }
 
-function formatCountdown(ms) {
-  if (ms <= 0) return '0s'
-  var totalSeconds = Math.floor(ms / 1000)
-  var hours = Math.floor(totalSeconds / 3600)
-  var minutes = Math.floor((totalSeconds % 3600) / 60)
-  var seconds = totalSeconds % 60
-
-  if (hours > 0) {
-    return hours + 'h ' + minutes + 'm'
-  } else if (minutes > 0) {
-    return minutes + 'm ' + seconds + 's'
-  } else {
-    return seconds + 's'
+// Date of the last dose the remaining tablets cover, as an ISO string ('' if already out)
+function estimateEndDate(med) {
+  var dosesLeft = Math.floor(med.count / med.dosage)
+  var date = med.scheduledAfter || new Date()
+  for (var i = 0; i < dosesLeft; i++) {
+    date = getNextDoseDate(med, date)
+    if (!date) return ''
   }
+  return dosesLeft > 0 ? date.toISOString() : ''
 }
-function updateCountdownDisplay(ms) {
-  var totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  var hours = Math.floor((totalSeconds % 86400) / 3600)
-  var minutes = Math.floor((totalSeconds % 3600) / 60)
-  var daysOfSupply = Math.floor(parseInt(medicineData.count) / parseInt(medicineData.dosage))
 
-  document.getElementById('countdownDays').textContent = Math.max(0, daysOfSupply)
-  document.getElementById('countdownHours').textContent = hours
-  document.getElementById('countdownMins').textContent = minutes
+function pickNextDose() {
+  var best = null
+  medicines.forEach(function(med) {
+    var date = getNextDoseDate(med, med.scheduledAfter || new Date())
+    if (date && (!best || date < best.date)) best = { med: med, date: date }
+  })
+  return best
+}
+
+// ===== FORMATTING =====
+
+var FREQ_LABELS = { weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month' }
+
+function isToday(date) {
+  return startOfDay(date).getTime() === startOfDay(new Date()).getTime()
+}
+
+function formatTimeOf(date) {
+  return new Date(date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
+function formatDoseTime(date) {
+  var time = formatTimeOf(date)
+  return isToday(date) ? time : date.toLocaleDateString([], { weekday: 'short' }) + ' ' + time
+}
+
+function formatDate(date) {
+  return new Date(date).toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
+
+function formatDateTime(date) {
+  return formatDate(date) + ', ' + formatTimeOf(date)
+}
+
+function formatClock(timeStr) {
+  var parts = timeStr.split(':')
+  var d = new Date()
+  d.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0)
+  return formatTimeOf(d)
+}
+
+function formatDays(days) {
+  return Object.keys(dayIndexMap)
+    .filter(function(d) { return days.indexOf(d) !== -1 })
+    .map(function(d) { return translations.en.days[d] })
+    .join(', ')
+}
+
+function sentence(text) {
+  return text.trim().replace(/[.。!！]+$/, '') + '.'
+}
+
+// ===== VOICE: speaking =====
+
+var voices = []
+var currentUtterance = null // kept so Chrome doesn't garbage-collect it mid-sentence
+
+function loadVoices() {
+  voices = window.speechSynthesis.getVoices()
+}
+
+if ('speechSynthesis' in window) {
+  loadVoices()
+  window.speechSynthesis.onvoiceschanged = loadVoices
+}
+
+// Prefer natural-sounding voices; the browser default is often robotic or the wrong accent
+function pickVoice(langTag) {
+  var base = langTag.split('-')[0]
+  var matches = voices.filter(function(v) {
+    return v.lang.replace('_', '-').split('-')[0].toLowerCase() === base
+  })
+  var isNatural = function(v) { return /natural|neural|enhanced|premium|google/i.test(v.name) }
+  var isExact = function(v) { return v.lang.replace('_', '-') === langTag }
+  return matches.find(function(v) { return isNatural(v) && isExact(v) }) ||
+    matches.find(isNatural) || matches.find(isExact) || matches[0] || null
+}
+
+function speak(text, onDone) {
+  var finished = false
+  function done() {
+    if (finished) return
+    finished = true
+    if (onDone) onDone()
+  }
+  if (!('speechSynthesis' in window)) { done(); return }
+
+  window.speechSynthesis.cancel()
+  var lang = speechLangMap[selectedLanguage] || 'en-US'
+  var utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = lang
+  var voice = pickVoice(lang)
+  if (voice) utterance.voice = voice
+  utterance.rate = 0.85
+  utterance.pitch = 1.05
+  utterance.onend = done
+  utterance.onerror = done
+  currentUtterance = utterance
+  window.speechSynthesis.speak(utterance)
+  setTimeout(done, 30000) // some browsers never fire onend
+}
+
+// Always the patient's language, even when the screen is shown in English
+function reminderSpeech(med) {
+  var t = translations[selectedLanguage] || translations.en
+  var phrases = voicePhrases[selectedLanguage] || voicePhrases.en
+  var parts = []
+  if (patientName) parts.push(patientName + ',')
+  parts.push(t.speechPrefix + med.name + '.')
+  parts.push(med.dosage + ' ' + phrases.tablets + '.')
+  if (med.notes) parts.push(sentence(med.notes))
+  parts.push(phrases.askConfirm)
+  return parts.join(' ')
+}
+
+function doseDetailsSpeech(dose) {
+  var phrases = voicePhrases[selectedLanguage] || voicePhrases.en
+  var lang = speechLangMap[selectedLanguage] || 'en-US'
+  var when = dose.date.toLocaleTimeString(lang, { hour: 'numeric', minute: '2-digit' })
+  if (!isToday(dose.date)) when = dose.date.toLocaleDateString(lang, { weekday: 'long' }) + ', ' + when
+  var parts = [phrases.nextMedicine + ' ' + dose.med.name + ', ' + when + '.', dose.med.dosage + ' ' + phrases.tablets + '.']
+  if (dose.med.notes) parts.push(sentence(dose.med.notes))
+  return parts.join(' ')
+}
+
+function speakConfirmation() {
+  speak(confirmationPhrases[selectedLanguage] || confirmationPhrases.en)
+}
+
+var audioContext = null
+
+function getAudioContext() {
+  if (!audioContext) {
+    var AudioCtx = window.AudioContext || window.webkitAudioContext
+    if (!AudioCtx) return null
+    audioContext = new AudioCtx()
+  }
+  if (audioContext.state === 'suspended') audioContext.resume()
+  return audioContext
 }
 
 function playChime() {
-  try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)()
-    var notes = [523, 659, 784]
-    notes.forEach(function(freq, i) {
-      var osc = ctx.createOscillator()
-      var gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.frequency.value = freq
-      osc.type = 'sine'
-      var startTime = ctx.currentTime + (i * 0.35)
-      gain.gain.setValueAtTime(0, startTime)
-      gain.gain.linearRampToValueAtTime(0.25, startTime + 0.05)
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.9)
-      osc.start(startTime)
-      osc.stop(startTime + 0.9)
+  var ctx = getAudioContext()
+  if (!ctx) return 0
+  var notes = [523, 659, 784]
+  notes.forEach(function(freq, i) {
+    var osc = ctx.createOscillator()
+    var gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = freq
+    osc.type = 'sine'
+    var startTime = ctx.currentTime + (i * 0.35)
+    gain.gain.setValueAtTime(0, startTime)
+    gain.gain.linearRampToValueAtTime(0.25, startTime + 0.05)
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.9)
+    osc.start(startTime)
+    osc.stop(startTime + 0.9)
+  })
+  return (notes.length * 0.35) + 0.9
+}
+
+// Browsers only allow sound and the mic after a tap, so this runs on every tap that opens patient mode
+var micChecked = false
+
+function unlockAudio() {
+  getAudioContext()
+  if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''))
+  if (micChecked || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return
+  micChecked = true
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(function(stream) {
+      stream.getTracks().forEach(function(track) { track.stop() })
     })
-    return (notes.length * 0.35) + 0.9
-  } catch (e) {
-    return 0
-  }
+    .catch(function() { voiceUnavailable = true })
 }
 
-function speakReminder() {
-  var t = getT()
-  var speechText = t.speechPrefix + medicineData.name
-  if (medicineData.notes && medicineData.notes.trim() !== '') {
-    speechText += '. ' + medicineData.notes
-  }
-  var speech = new SpeechSynthesisUtterance(speechText)
-  speech.lang = speechLangMap[selectedLanguage] || 'en-US'
-  speech.rate = 0.85
-  speech.pitch = 1.05
-  window.speechSynthesis.speak(speech)
-}
-var voiceConfirmWords = {
-  en: ['yes', 'yeah', 'yep'],
-  hi: ['हाँ', 'हां', 'haan', 'han'],
-  es: ['sí', 'si'],
-  ar: ['نعم', 'naam'],
-  fr: ['oui'],
-  zh: ['是', 'shi', '对'],
-  pt: ['sim'],
-  ru: ['да', 'da'],
-  ja: ['はい', 'hai'],
-  ko: ['네', 'ne', '예'],
-  de: ['ja'],
-  it: ['sì', 'si'],
-  tr: ['evet'],
-  vi: ['có', 'co'],
-  tl: ['oo'],
-  ur: ['ہاں', 'haan', 'han']
-}
-
-var confirmationPhrases = {
-  en: 'Good job, medicine taken',
-  hi: 'शाबाश, दवाई ले ली',
-  es: 'Muy bien, medicamento tomado',
-  ar: 'أحسنت، تم أخذ الدواء',
-  fr: 'Bien fait, médicament pris',
-  zh: '很好，药已服用',
-  pt: 'Muito bem, medicamento tomado',
-  ru: 'Отлично, лекарство принято',
-  ja: 'よくできました、薬を飲みました',
-  ko: '잘했어요, 약을 먹었어요',
-  de: 'Gut gemacht, Medikament eingenommen',
-  it: 'Ottimo, medicinale preso',
-  tr: 'Aferin, ilaç alındı',
-  vi: 'Giỏi lắm, đã uống thuốc',
-  tl: 'Magaling, nainom na ang gamot',
-  ur: 'شاباش، دوائی لے لی'
-}
+// ===== VOICE: listening =====
 
 var recognition = null
-var isListening = false
+var wantListening = false
+var voiceUnavailable = false // mic denied or missing; tap still works
+var NO_SPACE_LANGUAGES = ['zh', 'ja']
 
-function speakConfirmation() {
-  var phrase = confirmationPhrases[selectedLanguage] || confirmationPhrases.en
-  var speech = new SpeechSynthesisUtterance(phrase)
-  speech.lang = speechLangMap[selectedLanguage] || 'en-US'
-  speech.rate = 0.85
-  speech.pitch = 1.05
-  window.speechSynthesis.speak(speech)
+// Whole-word match so "yes" doesn't match inside "yesterday"
+function heardAnyOf(transcript, words) {
+  var text = transcript.toLowerCase().replace(/’/g, '\'')
+  if (NO_SPACE_LANGUAGES.indexOf(selectedLanguage) !== -1) {
+    return words.some(function(word) { return text.indexOf(word) !== -1 })
+  }
+  var padded = ' ' + text.replace(/[.,!?¡¿،؟;:"“”«»]/g, ' ').replace(/\s+/g, ' ').trim() + ' '
+  return words.some(function(word) {
+    return padded.indexOf(' ' + word.toLowerCase() + ' ') !== -1
+  })
+}
+
+function isConfirmation(transcript) {
+  var confirmWords = voiceConfirmWords[selectedLanguage] || voiceConfirmWords.en
+  var negativeWords = voiceNegativeWords[selectedLanguage] || voiceNegativeWords.en
+  return !heardAnyOf(transcript, negativeWords) && heardAnyOf(transcript, confirmWords)
 }
 
 function startVoiceListening() {
-  if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) return
-  if (isListening) return
-
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SpeechRecognition || voiceUnavailable) return
+  wantListening = true
+  if (recognition) return
+
   recognition = new SpeechRecognition()
   recognition.lang = speechLangMap[selectedLanguage] || 'en-US'
   recognition.continuous = false
   recognition.interimResults = false
 
   recognition.onresult = function(event) {
-    var heard = event.results[0][0].transcript.toLowerCase().trim()
-    var confirmWords = voiceConfirmWords[selectedLanguage] || voiceConfirmWords.en
+    if (isConfirmation(event.results[0][0].transcript)) confirmDose('voice')
+  }
 
-    var matched = confirmWords.some(function(word) {
-      return heard.includes(word.toLowerCase())
-    })
-
-    if (matched) {
-      stopVoiceListening()
-      triggerVoiceConfirm()
-    } else {
-      // Didn't hear the right word, listen again
-      startVoiceListening()
+  recognition.onerror = function(event) {
+    // Permission problems won't fix themselves, so stop retrying
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
+      voiceUnavailable = true
+      wantListening = false
     }
   }
 
-  recognition.onerror = function() {
-    isListening = false
-  }
-
+  // Recognition stops after each phrase or silence; restart while a reminder is waiting
   recognition.onend = function() {
-    isListening = false
-    // Keep listening if reminder is still active and not confirmed
-    if (!isConfirmed && document.getElementById('dueState').style.display !== 'none') {
-      startVoiceListening()
-    }
+    recognition = null
+    setTimeout(function() {
+      if (wantListening) startVoiceListening()
+    }, 300)
   }
 
-  isListening = true
-  recognition.start()
+  try {
+    recognition.start()
+  } catch (e) {
+    recognition = null
+  }
 }
 
 function stopVoiceListening() {
-  if (recognition) {
-    recognition.stop()
-    recognition = null
-  }
-  isListening = false
+  wantListening = false
+  if (recognition) recognition.abort()
 }
 
-function triggerVoiceConfirm() {
-  if (isConfirmed) return
-  isConfirmed = true
-  medicineData.count = Math.max(0, parseInt(medicineData.count) - parseInt(medicineData.dosage))
-checkLowSupply()
-  holdZone.classList.remove('holding')
-  holdZone.classList.add('confirmed')
-  document.getElementById('holdLabel').textContent = getT().confirmedText
-  if (navigator.vibrate) navigator.vibrate([100, 50, 100])
-  speakConfirmation()
+// ===== PATIENT MODE: countdown =====
 
-  setTimeout(function() {
-    holdZone.classList.remove('confirmed')
-    var soonest = null
-    var soonestDate = null
-    medicines.forEach(function(med) {
-      var nextDate = getNextReminderDate(med.days, med.time)
-      if (nextDate && (!soonestDate || nextDate < soonestDate)) {
-        soonest = med
-        soonestDate = nextDate
-      }
-    })
-    if (soonest) medicineData = soonest
-    startCountdown()
-  }, 3000)
+var countdownInterval = null
+var nextDose = null   // { med, date } shown on the countdown
+var activeDose = null // the reminder currently waiting for confirmation
+
+function showPatientState(state) {
+  document.getElementById('countdownState').style.display = state === 'countdown' ? 'flex' : 'none'
+  document.getElementById('dueState').style.display = state === 'due' ? 'flex' : 'none'
 }
 
-function fireReminder() {
-  // Switch to due state
-  document.getElementById('countdownState').style.display = 'none'
-  document.getElementById('dueState').style.display = 'block'
-
-  // Fill in due state content
-  document.getElementById('dueMedName').textContent = medicineData.name
-  document.getElementById('dueMedDosage').textContent = medicineData.dosage + ' tablet(s)'
-
-  var notesEl = document.getElementById('nextMedNotes')
-  if (medicineData.notes && medicineData.notes.trim() !== '') {
-    notesEl.textContent = medicineData.notes
-    notesEl.style.display = 'block'
+function openPatientMode() {
+  mode = 'patient'
+  unlockAudio()
+  document.getElementById('startOverlay').style.display = 'none'
+  showScreen('patientHomeScreen')
+  if (activeDose) {
+    showDueState()
+    announceReminder()
   } else {
-    notesEl.style.display = 'none'
+    startCountdown()
   }
-
-  // Reset hold zone
-  isConfirmed = false
-  holdZone.classList.remove('holding', 'confirmed')
-  document.getElementById('holdLabel').textContent = getT().holdToConfirm
-
-  // Vibrate
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200])
-
-  // Chime then speak
-  var chimeDuration = playChime()
-  setTimeout(function() {
-    speakReminder()
-    setTimeout(function() {
-      startVoiceListening()
-    }, 2000)
-  }, (chimeDuration * 1000) + 300)
 }
 
+function pausePatientMode() {
+  clearInterval(countdownInterval)
+  clearTimeout(holdTimer)
+  stopVoiceListening()
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  if (activeDose) clearTimeout(activeDose.repeatTimer)
+}
 
 function startCountdown() {
-  stopVoiceListening()
-  if (countdownInterval) clearInterval(countdownInterval)
-  nextReminderDate = getNextReminderDate(medicineData.days, medicineData.time)
+  clearInterval(countdownInterval)
+  nextDose = pickNextDose()
+  showPatientState('countdown')
 
-  document.getElementById('countdownState').style.display = 'block'
-  document.getElementById('dueState').style.display = 'none'
-
-  document.getElementById('nextMedName').textContent = medicineData.name
-  if (nextReminderDate) {
-    document.getElementById('nextMedTime').textContent = nextReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }
-
-  if (!nextReminderDate) {
-    document.getElementById('countdownHours').textContent = '0'
-    document.getElementById('countdownMins').textContent = '0'
+  document.getElementById('nextMedName').textContent = nextDose ? nextDose.med.name : 'No medicines scheduled'
+  document.getElementById('nextMedTime').textContent = nextDose ? formatDoseTime(nextDose.date) : ''
+  if (!nextDose) {
+    updateCountdownDisplay(0)
     return
   }
 
-  countdownInterval = setInterval(function() {
-    var diff = nextReminderDate - new Date()
-    if (diff <= 0) {
-      clearInterval(countdownInterval)
-      updateCountdownDisplay(0)
-      fireReminder()
-      return
-    }
-    updateCountdownDisplay(diff)
-  }, 1000)
+  countdownInterval = setInterval(tickCountdown, 1000)
+  tickCountdown()
+}
 
-  updateCountdownDisplay(nextReminderDate - new Date())
+function tickCountdown() {
+  var diff = nextDose.date - new Date()
+  if (diff <= 0) {
+    clearInterval(countdownInterval)
+    fireReminder(nextDose)
+    return
+  }
+  updateCountdownDisplay(diff)
+}
+
+// Rounds up to the minute so it never shows "0 mins" before the reminder has fired
+function updateCountdownDisplay(ms) {
+  var totalMinutes = Math.max(0, Math.ceil(ms / 60000))
+  document.getElementById('countdownDays').textContent = Math.floor(totalMinutes / 1440)
+  document.getElementById('countdownHours').textContent = Math.floor((totalMinutes % 1440) / 60)
+  document.getElementById('countdownMins').textContent = totalMinutes % 60
 }
 
 function showCheckOverlay() {
+  if (!nextDose) return
+  var med = nextDose.med
   var overlay = document.getElementById('checkOverlay')
 
-  document.getElementById('checkMedName').textContent = medicineData.name
-  document.getElementById('checkMedDosage').textContent = medicineData.dosage + ' tablet(s)'
-  document.getElementById('checkNextTime').textContent = nextReminderDate
-    ? 'Next: ' + nextReminderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : ''
+  document.getElementById('checkMedName').textContent = med.name
+  document.getElementById('checkMedDosage').textContent = med.dosage + ' tablet(s)'
+  document.getElementById('checkNextTime').textContent = 'Next: ' + formatDoseTime(nextDose.date)
 
   var notesEl = document.getElementById('checkMedNotes')
-  if (medicineData.notes && medicineData.notes.trim() !== '') {
-    notesEl.textContent = medicineData.notes
-    notesEl.style.display = 'block'
-  } else {
-    notesEl.style.display = 'none'
-  }
+  notesEl.textContent = med.notes
+  notesEl.style.display = med.notes ? 'block' : 'none'
 
   overlay.style.display = 'flex'
+  speak(doseDetailsSpeech(nextDose))
 
   var dismissTimer = setTimeout(function() {
     overlay.style.display = 'none'
-  }, 4000)
+  }, 6000)
 
   overlay.onclick = function() {
     clearTimeout(dismissTimer)
@@ -806,176 +782,363 @@ document.getElementById('countdownMedCard').addEventListener('click', function()
   showCheckOverlay()
 })
 
-// ===== END MEDICINE DATA + COUNTDOWN =====
+// ===== PATIENT MODE: reminder =====
 
-document.getElementById('medNextBtn').addEventListener('click', function() {
-  var medName = document.getElementById('medNameInput').value.trim()
-  var medDosage = document.getElementById('medDosageInput').value.trim()
-  var medCount = document.getElementById('medCountInput').value.trim()
-  var medTime = document.getElementById('medTimeInput').value.trim()
-  var selectedDays = document.querySelectorAll('.day-btn.selected')
-  var medError = document.getElementById('medError')
+var REPEAT_AFTER_MS = 5 * 60 * 1000
+var MAX_ANNOUNCEMENTS = 3 // at 0, 5 and 10 minutes; marked missed at 15
 
-if (medName === '' || medDosage === '' || medCount === '' || medTime === '' || selectedDays.length === 0 || Number(medDosage) < 1 || Number(medCount) < 1) {
-  medError.textContent = getT().medErrorText
-  medError.style.display = 'block'
-  return
+function fireReminder(dose) {
+  activeDose = {
+    med: dose.med,
+    scheduledFor: dose.date,
+    remindedAt: new Date(),
+    announcements: 0,
+    repeatTimer: null
+  }
+  showDueState()
+  announceReminder()
 }
 
-if (Number(medDosage) >= Number(medCount)) {
-  medError.textContent = 'Dosage must be less than your starting tablet count'
-  medError.style.display = 'block'
-  return
+function showDueState() {
+  var med = activeDose.med
+  showPatientState('due')
+  document.getElementById('dueMedName').textContent = med.name
+  document.getElementById('dueMedDosage').textContent = med.dosage + ' tablet(s)'
+
+  var notesEl = document.getElementById('nextMedNotes')
+  notesEl.textContent = med.notes
+  notesEl.style.display = med.notes ? 'block' : 'none'
+
+  holdZone.classList.remove('holding', 'confirmed')
+  document.getElementById('holdLabel').textContent = getT().holdToConfirm
 }
 
-var duplicate = medicines.some(function(m) {
-  return m.name.toLowerCase().trim() === medName.toLowerCase().trim()
-})
-
-if (duplicate) {
-  medError.textContent = 'This medicine has already been added'
-  medError.style.display = 'block'
-  return
+// False once the dose is confirmed/missed or the caregiver has opened the dashboard
+function isStillWaiting(dose) {
+  return mode === 'patient' && dose === activeDose
 }
 
-medError.style.display = 'none'
+function announceReminder() {
+  var dose = activeDose
+  dose.announcements++
+  stopVoiceListening() // so the mic doesn't hear the app talking
 
-var daysArr = []
-selectedDays.forEach(function(btn) {
-  daysArr.push(btn.getAttribute('data-day'))
-})
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200])
+  var chimeSeconds = playChime()
 
-medicineData = {
-  name: medName,
-  dosage: medDosage,
-  count: medCount,
-  time: medTime,
-  notes: document.getElementById('medNotesInput').value,
-  days: daysArr
-}
+  setTimeout(function() {
+    if (!isStillWaiting(dose)) return
+    speak(reminderSpeech(dose.med), function() {
+      if (isStillWaiting(dose)) startVoiceListening()
+    })
+  }, (chimeSeconds * 1000) + 300)
 
-medicines.push(medicineData)
-document.getElementById('medicineScreen').style.display = 'none'
-document.getElementById('medicineAddedScreen').style.display = 'flex'
-})
-
-document.getElementById('addAnotherBtn').addEventListener('click', function() {
-  document.getElementById('medNameInput').value = ''
-  document.getElementById('medDosageInput').value = ''
-  document.getElementById('medCountInput').value = ''
-  document.getElementById('medTimeInput').value = ''
-  document.getElementById('medNotesInput').value = ''
-  document.getElementById('medError').style.display = 'none'
-  document.querySelectorAll('.day-btn.selected').forEach(function(btn) {
-    btn.classList.remove('selected')
-  })
-  document.getElementById('medicineAddedScreen').style.display = 'none'
-  document.getElementById('medicineScreen').style.display = 'flex'
-})
-
-document.getElementById('doneAddingBtn').addEventListener('click', function() {
-  var soonestMed = null
-  var soonestDate = null
-  medicines.forEach(function(med) {
-    var nextDate = getNextReminderDate(med.days, med.time)
-    if (nextDate && (!soonestDate || nextDate < soonestDate)) {
-      soonestMed = med
-      soonestDate = nextDate
+  dose.repeatTimer = setTimeout(function() {
+    if (!isStillWaiting(dose)) return
+    if (dose.announcements < MAX_ANNOUNCEMENTS) {
+      announceReminder()
+    } else {
+      finishDose('missed', '')
+      startCountdown()
     }
-  })
-  if (soonestMed) medicineData = soonestMed
+  }, REPEAT_AFTER_MS)
+}
 
-  document.getElementById('homeScreen').style.display = 'none'
-  document.getElementById('whoScreen').style.display = 'none'
-  document.getElementById('nameScreen').style.display = 'none'
-  document.getElementById('accessibilityScreen').style.display = 'none'
-  document.getElementById('languageScreen').style.display = 'none'
-  document.getElementById('medicineScreen').style.display = 'none'
-  document.getElementById('medicineAddedScreen').style.display = 'none'
-  document.getElementById('patientHomeScreen').style.display = 'flex'
-  startCountdown()
-})
+// Records the dose as taken or missed and moves that medicine's schedule forward
+function finishDose(status, method) {
+  var dose = activeDose
+  activeDose = null
+  clearTimeout(dose.repeatTimer)
+  stopVoiceListening()
+
+  var med = dose.med
+  if (status === 'confirmed') med.count = Math.max(0, med.count - med.dosage)
+  med.scheduledAfter = dose.scheduledFor
+  med.endDate = estimateEndDate(med)
+
+  var entry = {
+    medicineName: med.name,
+    dosage: med.dosage,
+    scheduledFor: dose.scheduledFor,
+    remindedAt: dose.remindedAt,
+    confirmedAt: status === 'confirmed' ? new Date() : null,
+    status: status,
+    method: method,
+    tabletsLeft: med.count
+  }
+  doseLog.unshift(entry)
+  BoloBackend.logDose(entry)
+  BoloBackend.updateMedicine(med)
+}
+
+function confirmDose(method) {
+  if (!activeDose || mode !== 'patient') return
+  finishDose('confirmed', method)
+
+  holdZone.classList.remove('holding')
+  holdZone.classList.add('confirmed')
+  document.getElementById('holdLabel').textContent = getT().confirmedText
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+  speakConfirmation()
+
+  setTimeout(function() {
+    holdZone.classList.remove('confirmed')
+    if (mode === 'patient' && !activeDose) startCountdown()
+  }, 3000)
+}
 
 // ===== HOLD ZONE =====
 
 var holdTimer = null
 var holdZone = document.getElementById('holdZone')
 var HOLD_DURATION = 3000
-var isConfirmed = false
 
 holdZone.addEventListener('pointerdown', function() {
-  if (isConfirmed) return
-  var t = getT()
-
+  if (!activeDose) return
   holdZone.style.setProperty('--fill-duration', HOLD_DURATION + 'ms')
   holdZone.classList.add('holding')
-  document.getElementById('holdLabel').textContent = t.keepHolding
+  document.getElementById('holdLabel').textContent = getT().keepHolding
   if (navigator.vibrate) navigator.vibrate(50)
 
   holdTimer = setTimeout(function() {
-    isConfirmed = true
-    medicineData.count = Math.max(0, parseInt(medicineData.count) - parseInt(medicineData.dosage))
-checkLowSupply()
-    holdZone.classList.remove('holding')
-    holdZone.classList.add('confirmed')
-    document.getElementById('holdLabel').textContent = t.confirmedText
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100])
-
-    // After 2 seconds, go back to countdown for next reminder
-    setTimeout(function() {
-      holdZone.classList.remove('confirmed')
-      // Find the medicine with the soonest next reminder
-    var soonest = null
-    var soonestDate = null
-    medicines.forEach(function(med) {
-      var nextDate = getNextReminderDate(med.days, med.time)
-  if (nextDate && (!soonestDate || nextDate < soonestDate)) {
-    soonest = med
-    soonestDate = nextDate
-  }
-})
-if (soonest) medicineData = soonest
-      startCountdown()
-    }, 2000)
+    confirmDose('tap')
   }, HOLD_DURATION)
 })
 
-holdZone.addEventListener('pointerup', function() {
+function cancelHold() {
   clearTimeout(holdTimer)
-  if (!isConfirmed) {
+  if (activeDose) {
     holdZone.classList.remove('holding')
     document.getElementById('holdLabel').textContent = getT().holdToConfirm
   }
-})
-
-holdZone.addEventListener('pointercancel', function() {
-  clearTimeout(holdTimer)
-  if (!isConfirmed) {
-    holdZone.classList.remove('holding')
-    document.getElementById('holdLabel').textContent = getT().holdToConfirm
-  }
-})
-function checkLowSupply() {
-  var daysOfSupply = Math.floor(parseInt(medicineData.count) / parseInt(medicineData.dosage))
-  if (daysOfSupply <= 7) {
-    var msg = medicineData.name + ' is running low — only ' + daysOfSupply + ' day(s) of supply left'
-    showLowSupplyAlert(msg)
-  }
 }
 
+holdZone.addEventListener('pointerup', cancelHold)
+holdZone.addEventListener('pointercancel', cancelHold)
 
-function showLowSupplyAlert(msg) {
-  var existing = document.getElementById('lowSupplyAlert')
-  if (existing) existing.remove()
+// ===== CAREGIVER LOCK =====
 
-  var alert = document.createElement('div')
-  alert.id = 'lowSupplyAlert'
-  alert.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#C0392B;color:white;padding:16px 24px;border-radius:14px;font-size:15px;font-weight:500;z-index:200;text-align:center;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);'
-  alert.textContent = msg
+var PIN_MAX_TRIES = 5
+var PIN_LOCKOUT_MS = 60 * 1000
+var pinTries = 0
+var pinLockedUntil = 0
 
-  document.body.appendChild(alert)
-
-  setTimeout(function() {
-    alert.remove()
-  }, 6000)
+function openPinOverlay() {
+  document.getElementById('pinEntryInput').value = ''
+  document.getElementById('pinPasswordInput').value = ''
+  document.getElementById('pinEntryError').style.display = 'none'
+  document.getElementById('pinPasswordSection').style.display = 'none'
+  document.getElementById('forgotPinBtn').style.display = BoloBackend.isEnabled() ? 'block' : 'none'
+  document.getElementById('pinOverlay').style.display = 'flex'
+  document.getElementById('pinEntryInput').focus()
 }
+
+function closePinOverlay() {
+  document.getElementById('pinOverlay').style.display = 'none'
+}
+
+document.getElementById('caregiverLockBtn').addEventListener('click', openPinOverlay)
+document.getElementById('pinCancelBtn').addEventListener('click', closePinOverlay)
+
+document.getElementById('pinUnlockBtn').addEventListener('click', function() {
+  var pinInput = document.getElementById('pinEntryInput')
+  var pinError = document.getElementById('pinEntryError')
+  var secondsLeft = Math.ceil((pinLockedUntil - Date.now()) / 1000)
+
+  if (secondsLeft > 0) {
+    showError(pinError, 'Too many wrong tries. Try again in ' + secondsLeft + ' seconds')
+    return
+  }
+
+  BoloBackend.checkPin(pinInput.value).then(function(correct) {
+    if (correct) {
+      pinTries = 0
+      closePinOverlay()
+      openDashboard()
+      return
+    }
+    pinTries++
+    pinInput.value = ''
+    if (pinTries >= PIN_MAX_TRIES) {
+      pinTries = 0
+      pinLockedUntil = Date.now() + PIN_LOCKOUT_MS
+      showError(pinError, 'Too many wrong tries. Try again in ' + (PIN_LOCKOUT_MS / 1000) + ' seconds')
+    } else {
+      showError(pinError, 'Wrong PIN')
+    }
+  })
+})
+
+document.getElementById('pinEntryInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('pinUnlockBtn').click()
+})
+
+document.getElementById('forgotPinBtn').addEventListener('click', function() {
+  document.getElementById('pinPasswordSection').style.display = 'block'
+  document.getElementById('pinPasswordInput').focus()
+})
+
+// The account password works as a master key to set a new PIN
+document.getElementById('pinPasswordBtn').addEventListener('click', function() {
+  var btn = this
+  btn.disabled = true
+  BoloBackend.verifyPassword(document.getElementById('pinPasswordInput').value)
+    .then(function() {
+      closePinOverlay()
+      mode = 'caregiver'
+      pausePatientMode()
+      openPinSetup(true)
+    })
+    .catch(function(err) { showError(document.getElementById('pinEntryError'), err.message) })
+    .then(function() { btn.disabled = false })
+})
+
+// ===== CAREGIVER DASHBOARD =====
+
+var LOW_SUPPLY_DAYS = 7
+var MISSED_ALERT_DAYS = 2
+
+function openDashboard() {
+  mode = 'caregiver'
+  pausePatientMode()
+  renderDashboard()
+  showScreen('caregiverScreen')
+}
+
+function el(tag, className, text) {
+  var node = document.createElement(tag)
+  if (className) node.className = className
+  if (text !== undefined) node.textContent = text
+  return node
+}
+
+function renderDashboard() {
+  document.getElementById('dashPatientName').textContent = patientName
+  renderAlerts()
+  renderMedicineCards()
+  renderDoseLog()
+}
+
+function renderAlerts() {
+  var box = document.getElementById('dashAlerts')
+  box.innerHTML = ''
+  var alerts = []
+
+  if (activeDose) {
+    alerts.push({ level: 'warn', text: activeDose.med.name + ' reminder is waiting to be confirmed' })
+  }
+
+  medicines.forEach(function(med) {
+    if (med.count < med.dosage) {
+      alerts.push({ level: 'danger', text: med.name + ' is out of tablets' })
+    } else if (med.endDate && new Date(med.endDate) - Date.now() < LOW_SUPPLY_DAYS * DAY_MS) {
+      alerts.push({ level: 'warn', text: med.name + ' runs out on ' + formatDate(med.endDate) + ' (' + med.count + ' tablets left)' })
+    }
+  })
+
+  var missedSince = Date.now() - MISSED_ALERT_DAYS * DAY_MS
+  doseLog.forEach(function(entry) {
+    if (entry.status === 'missed' && entry.scheduledFor.getTime() >= missedSince) {
+      alerts.push({ level: 'danger', text: 'Missed ' + entry.medicineName + ' on ' + formatDateTime(entry.scheduledFor) })
+    }
+  })
+
+  if (alerts.length === 0) box.appendChild(el('p', 'dash-alert ok', 'All good, no alerts'))
+  alerts.forEach(function(alert) {
+    box.appendChild(el('p', 'dash-alert ' + alert.level, alert.text))
+  })
+}
+
+function statBlock(value, label) {
+  var block = el('div', 'dash-stat')
+  block.appendChild(el('p', 'dash-stat-value', String(value)))
+  block.appendChild(el('p', 'dash-stat-label', label))
+  return block
+}
+
+function renderMedicineCards() {
+  var list = document.getElementById('dashMedicines')
+  list.innerHTML = ''
+  if (medicines.length === 0) list.appendChild(el('p', 'dash-empty', 'No medicines yet'))
+
+  medicines.forEach(function(med) {
+    var card = el('div', 'dash-card')
+    card.appendChild(el('p', 'dash-med-name', med.name))
+    card.appendChild(el('p', 'dash-med-detail',
+      med.dosage + ' tablet(s) at ' + formatClock(med.time) + ' · ' + formatDays(med.days) + ' · ' + FREQ_LABELS[med.frequency]))
+
+    var stats = el('div', 'dash-stats')
+    stats.appendChild(statBlock(med.count, 'tablets left'))
+    stats.appendChild(statBlock(Math.floor(med.count / med.dosage), 'doses left'))
+    stats.appendChild(statBlock(med.endDate ? formatDate(med.endDate) : 'Out', 'runs out'))
+    card.appendChild(stats)
+
+    if (med.notes) card.appendChild(el('p', 'dash-med-notes', med.notes))
+
+    var actions = el('div', 'dash-actions')
+    var refillInput = el('input', 'dash-refill-input')
+    refillInput.type = 'number'
+    refillInput.min = '1'
+    refillInput.placeholder = 'Tablets'
+    var refillBtn = el('button', 'dash-btn', 'Refill')
+    var removeBtn = el('button', 'dash-btn danger', 'Remove')
+
+    refillBtn.addEventListener('click', function() {
+      var added = parseInt(refillInput.value, 10)
+      if (!(added >= 1)) {
+        refillInput.focus()
+        return
+      }
+      med.count += added
+      med.endDate = estimateEndDate(med)
+      BoloBackend.updateMedicine(med)
+      renderDashboard()
+    })
+
+    removeBtn.addEventListener('click', function() {
+      if (!confirm('Remove ' + med.name + '? Reminders for it will stop.')) return
+      medicines.splice(medicines.indexOf(med), 1)
+      if (activeDose && activeDose.med === med) activeDose = null
+      BoloBackend.deleteMedicine(med)
+      renderDashboard()
+    })
+
+    actions.appendChild(refillInput)
+    actions.appendChild(refillBtn)
+    actions.appendChild(removeBtn)
+    card.appendChild(actions)
+    list.appendChild(card)
+  })
+}
+
+function renderDoseLog() {
+  var list = document.getElementById('dashLog')
+  list.innerHTML = ''
+  if (doseLog.length === 0) list.appendChild(el('p', 'dash-empty', 'No reminders yet'))
+
+  doseLog.slice(0, 30).forEach(function(entry) {
+    var taken = entry.status === 'confirmed'
+    var statusText = taken
+      ? '✓ Taken ' + formatTimeOf(entry.confirmedAt) + (entry.method ? ' (' + entry.method + ')' : '')
+      : '✗ Missed'
+    var row = el('div', 'dash-log-row')
+    row.appendChild(el('span', 'dash-log-med', entry.medicineName))
+    row.appendChild(el('span', 'dash-log-time', formatDateTime(entry.scheduledFor)))
+    row.appendChild(el('span', 'dash-log-status ' + entry.status, statusText))
+    list.appendChild(row)
+  })
+}
+
+document.getElementById('dashAddMedBtn').addEventListener('click', function() {
+  addingFromDashboard = true
+  resetMedicineForm()
+  showScreen('medicineScreen')
+})
+
+document.getElementById('lockDashboardBtn').addEventListener('click', function() {
+  openPatientMode()
+})
+
+document.getElementById('signOutBtn').addEventListener('click', function() {
+  if (confirm('Sign out? The patient will stop getting reminders on this device.')) BoloBackend.logOut()
+})

@@ -15,6 +15,20 @@
             <h2>Welcome to Bolo</h2>
             <p>Reminders that feel like family</p>
             <button class="next-btn" id="getStartedBtn">Get started</button>
+            <p class="error-message" id="homeError" style="display: none;"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" id="authScreen" style="display: none;">
+        <div class="content">
+          <p class="section-label" id="authTitle">Create an account</p>
+          <div class="home-card">
+            <input type="text" id="usernameInput" placeholder="Username" autocomplete="username" autocapitalize="none" />
+            <input type="password" id="passwordInput" placeholder="Password (at least 6 characters)" autocomplete="new-password" />
+            <p class="error-message" id="authError" style="display: none;"></p>
+            <button class="next-btn" id="authSubmitBtn">Create account</button>
+            <button class="link-btn" id="authSwitchBtn">Already have an account? Log in</button>
           </div>
         </div>
       </div>
@@ -101,6 +115,19 @@
         </div>
       </div>
 
+      <div class="screen" id="pinSetupScreen" style="display: none;">
+        <div class="content">
+          <p class="section-label" id="pinSetupLabel">Create a caregiver PIN</p>
+          <div class="home-card">
+            <p>This 4-digit PIN opens the caregiver dashboard, where you can see tablets left, refill, and view the dose history. The patient screen stays locked without it.</p>
+            <input type="password" id="pinInput" class="pin-input" inputmode="numeric" placeholder="4-digit PIN" autocomplete="off" />
+            <input type="password" id="pinConfirmInput" class="pin-input" inputmode="numeric" placeholder="Type it again" autocomplete="off" />
+            <p class="error-message" id="pinSetupError" style="display: none;"></p>
+            <button class="next-btn" id="pinSaveBtn">Save PIN</button>
+          </div>
+        </div>
+      </div>
+
       <div class="screen" id="medicineScreen" style="display: none;">
         <div class="content">
           <p class="section-label" id="medScreenLabel">Add a medicine</p>
@@ -134,6 +161,7 @@
             <p class="error-message" id="medError" style="display: none;">Please fill in medicine name, dosage, starting count, time, and at least one day to continue</p>
 
             <button class="next-btn" id="medNextBtn" style="margin-top: 16px;">Add medicine</button>
+            <button class="done-btn" id="medCancelBtn" style="display: none;">Cancel</button>
           </div>
         </div>
       </div>
@@ -202,8 +230,66 @@
           </div>
 
         </div>
+
+        <button class="caregiver-lock-btn" id="caregiverLockBtn" aria-label="Caregiver dashboard">🔒</button>
+
+        <!-- PIN OVERLAY -->
+        <div class="overlay" id="pinOverlay" style="display: none;">
+          <div class="check-panel">
+            <p class="check-title">Caregiver PIN</p>
+            <input type="password" id="pinEntryInput" class="pin-input" inputmode="numeric" placeholder="4-digit PIN" autocomplete="off" />
+            <p class="error-message" id="pinEntryError" style="display: none;"></p>
+            <button class="next-btn" id="pinUnlockBtn">Unlock</button>
+            <button class="done-btn" id="pinCancelBtn">Cancel</button>
+            <button class="link-btn" id="forgotPinBtn">Forgot PIN?</button>
+            <div id="pinPasswordSection" style="display: none;">
+              <input type="password" id="pinPasswordInput" placeholder="Account password" autocomplete="current-password" />
+              <button class="done-btn" id="pinPasswordBtn">Set a new PIN</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAP TO START (browsers block sound until the page is tapped) -->
+        <div class="overlay" id="startOverlay" style="display: none;">
+          <div class="check-panel">
+            <p class="check-title">Tap anywhere to start</p>
+            <p class="check-detail">This turns on the voice reminders</p>
+          </div>
+        </div>
       </div>
 
+      <div class="screen" id="caregiverScreen" style="display: none;">
+        <div class="dashboard">
+          <div class="dash-header">
+            <div>
+              <p class="dash-eyebrow">Caregiver dashboard</p>
+              <h2 class="dash-title" id="dashPatientName"></h2>
+            </div>
+            <button class="done-btn dash-lock-btn" id="lockDashboardBtn">Lock 🔒</button>
+          </div>
+
+          <p class="dash-section">Alerts</p>
+          <div id="dashAlerts"></div>
+
+          <div class="dash-section-row">
+            <p class="dash-section">Medicines</p>
+            <button class="dash-btn" id="dashAddMedBtn">+ Add medicine</button>
+          </div>
+          <div id="dashMedicines"></div>
+
+          <p class="dash-section">Recent doses</p>
+          <div id="dashLog"></div>
+
+          <button class="link-btn" id="signOutBtn">Sign out</button>
+        </div>
+      </div>
+
+      <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+      <script src="firebase-config.js"></script>
+      <script src="backend.js"></script>
+      <script src="translations.js"></script>
       <script src="script.js"></script>
     </div>
   </body>
