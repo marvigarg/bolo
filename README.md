@@ -1,6 +1,8 @@
 # Bolo 🗣️
 *Bolo means "speak" in Hindi.*
 
+**Try it live: https://bolo-ebdc0.web.app** (use Chrome for the best voice support, and allow the microphone)
+
 I built this for my grandmother. She is blind and Hindi-speaking, and every medication reminder app I found assumed the user could see and read English. Bolo speaks to her in her language so she never misses a dose.
 
 ## What it does
@@ -42,6 +44,14 @@ Then open http://localhost:8000. Without Firebase set up, the app runs offline a
 4. Project settings → Your apps → add a **Web app** → copy the config into `firebase-config.js`
 
 Data lives at `caregivers/{uid}/patients/{patientId}/medicines` and `/logs`, so one caregiver can have several patients later.
+
+## Deploying
+```
+npm install -g firebase-tools
+firebase login
+firebase deploy --only hosting
+```
+`firebase.json` uploads only the files the app needs (not `.git`, config, or docs).
 
 ## Status
 Work in progress. Next up: multiple patients per caregiver, and texting the caregiver about missed doses.
